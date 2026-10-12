@@ -1,0 +1,24 @@
+package com.github.glutton.lwjgl3;
+
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.graphics.glutils.HdpiMode;
+import com.badlogic.gdx.physics.box2d.Box2D;
+import com.github.glutton.GluttonGame;
+
+public class Lwjgl3Launcher {
+
+	public static void main(String[] args) {
+		Box2D.init();
+
+		Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
+		configuration.setTitle("Gluttony");
+		configuration.setDecorated(false);
+		configuration.setResizable(false);
+		configuration.setHdpiMode(HdpiMode.Pixels);
+		configuration.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+		configuration.useVsync(true);
+
+		new Lwjgl3Application(new GluttonGame(), configuration);
+	}
+}

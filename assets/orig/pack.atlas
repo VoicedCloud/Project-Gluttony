@@ -1,0 +1,89 @@
+pack.png
+	size: 2048, 512
+BookMargin
+	bounds: 1243, 317, 48, 48
+	split: 9, 9, 9, 9
+Book_GluttonUI
+	bounds: 1, 197, 162, 96
+	split: 11, 11, 3, 13
+Dead
+	index: 0
+	bounds: 203, 367, 128, 128
+Dead
+	index: 1
+	bounds: 1, 67, 128, 128
+Dead
+	index: 2
+	bounds: 333, 367, 128, 128
+Dead
+	index: 3
+	bounds: 463, 367, 128, 128
+Dead
+	index: 4
+	bounds: 593, 367, 128, 128
+Hurt
+	index: 0
+	bounds: 723, 367, 128, 128
+Hurt
+	index: 1
+	bounds: 853, 367, 128, 128
+Hurt
+	index: 2
+	bounds: 983, 367, 128, 128
+Idle
+	index: 0
+	bounds: 1113, 367, 128, 128
+Idle
+	index: 1
+	bounds: 1243, 367, 128, 128
+Idle
+	index: 2
+	bounds: 1373, 367, 128, 128
+Idle
+	index: 3
+	bounds: 1503, 367, 128, 128
+Idle
+	index: 4
+	bounds: 1503, 367, 128, 128
+Idle
+	index: 5
+	bounds: 1633, 367, 128, 128
+Run
+	index: 0
+	bounds: 1763, 367, 128, 128
+Run
+	index: 1
+	bounds: 1893, 367, 128, 128
+Run
+	index: 2
+	bounds: 203, 237, 128, 128
+Run
+	index: 3
+	bounds: 333, 237, 128, 128
+Run
+	index: 4
+	bounds: 463, 237, 128, 128
+Run
+	index: 5
+	bounds: 593, 237, 128, 128
+Run
+	index: 6
+	bounds: 723, 237, 128, 128
+Run
+	index: 7
+	bounds: 853, 237, 128, 128
+Run
+	index: 8
+	bounds: 983, 237, 128, 128
+Run
+	index: 9
+	bounds: 1113, 237, 128, 128
+Solid_black
+	bounds: 1, 295, 200, 200
+	split: 0, 0, 0, 0
+ThickGround
+	bounds: 1, 1, 48, 64
+Tools_Crafting_Writing_Pen_Quill_Feather
+	bounds: 131, 180, 15, 15
+white-pixel
+	bounds: 2023, 494, 1, 1

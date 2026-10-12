@@ -1,0 +1,27 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+dependencies {
+    // Core libGDX
+    api "com.badlogicgames.gdx:gdx:$gdxVersion"
+    api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+
+    // 1. Box2D module (Required for HyperLap2D physics engine)
+    api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+
+    // 2. HyperLap2D Core Runtime
+    api "games.rednblack.hyperlap2d:runtime-libgdx:$h2dVersion"
+
+    // 3. Artemis-ODB ECS Engine (Used internally by HyperLap2D)
+    api "net.onedaybeard.artemis:artemis-odb:$artemisVersion"
+    
+    api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+
+    if(enableGraalNative == 'true') {
+        implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
+    }
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
