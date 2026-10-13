@@ -1,20 +1,20 @@
 package com.github.glutton.screens;
 
-import com.artemis.World;
+import com.github.glutton.background.ParallaxBackground;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.glutton.GluttonGame;
-import com.github.glutton.components.PlayerComponent;
-import com.github.glutton.systems.PlayerSystem;
+import com.github.glutton.player.PlayerAnimator;
+import com.github.glutton.player.PlayerController;
+import com.github.glutton.player.PlayerState;
 import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
-import games.rednblack.editor.renderer.utils.ItemWrapper;
 
 public class Page1Screen implements Screen {
 
@@ -22,10 +22,17 @@ public class Page1Screen implements Screen {
 	private SceneLoader sceneLoader;
 	private Viewport viewport;
 	private OrthographicCamera camera;
-	private com.badlogic.gdx.physics.box2d.World physicsWorld;
 
-	private Box2DDebugRenderer debugRenderer;
-	private boolean debugMode = true;
+	private SpriteBatch batch;
+	private ShapeRenderer shapeRenderer;
+
+	private PlayerState playerState;
+	private PlayerController playerController;
+	private PlayerAnimator playerAnimator;
+
+	private ParallaxBackground background;
+
+	private boolean debugHitbox = true;
 
 	public Page1Screen(GluttonGame game) {
 		this.game = game;
@@ -34,51 +41,75 @@ public class Page1Screen implements Screen {
 	@Override
 	public void show() {
 		camera = new OrthographicCamera();
-		camera.zoom = 0.35f;
+		camera.zoom = 0.25f;
 		viewport = new FitViewport(1280f, 720f, camera);
 
-		physicsWorld = new com.badlogic.gdx.physics.box2d.World(new Vector2(0, -10f), true);
+		background = new ParallaxBackground();
 
-		// 1. Add PlayerSystem BEFORE creating SceneLoader
+		// Level art only — no player systems/components attached here anymore
 		SceneConfiguration config = new SceneConfiguration();
-		config.setWorld(physicsWorld);
-		config.addSystem(new PlayerSystem(camera));
-
 		sceneLoader = new SceneLoader(config);
 		sceneLoader.loadScene("Page1", viewport);
 
 		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 
-		// 2. Fetch Player entity ID and add PlayerComponent
-		ItemWrapper rootWrapper = new ItemWrapper(sceneLoader.getRoot(), sceneLoader.getEngine());
-		ItemWrapper playerItem = rootWrapper.getChild("Player");
+		batch = new SpriteBatch();
+		shapeRenderer = new ShapeRenderer();
 
-		if (playerItem != null) {
-			int entityId = playerItem.getEntity();
-			World artemisWorld = sceneLoader.getEngine();
-			artemisWorld.edit(entityId).add(new PlayerComponent());
-		}
-
-		debugRenderer = new Box2DDebugRenderer();
+		playerState = new PlayerState();
+		playerState.x = 0f;
+		playerState.y = 300f; // spawn above the floor, let it fall and land
+		playerController = new PlayerController(camera);
+		playerAnimator = new PlayerAnimator();
 	}
 
 	@Override
 	public void render(float delta) {
+		// 1. Clear screen and apply viewport first
+		viewport.apply();
 		Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-		viewport.apply();
+		// 2. Update player logic and animator state time
+		playerController.update(playerState, delta);
+		playerAnimator.update(delta);
 
-		// Step the Box2D simulation forward
-		physicsWorld.step(1f / 60f, 6, 2);
+		// 3. Calculate camera view boundaries for parallax (including vertical bounds)
+		float viewWidth = camera.viewportWidth * camera.zoom;
+		float viewHeight = camera.viewportHeight * camera.zoom;
+		float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+		float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
-		// Update Artemis-ODB engine (this is what syncs body -> transform, runs PlayerSystem, etc.)
+		// 4. Draw Parallax Background anchored to the camera view box
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
+		batch.end();
+
+		// 5. Draw HyperLap2D static level art
 		sceneLoader.getEngine().setDelta(delta);
 		sceneLoader.getEngine().process();
 
-		// Render Box2D debug lines using sceneLoader.getWorld()
-		if (debugMode && sceneLoader.getWorld() != null) {
-			debugRenderer.render(sceneLoader.getWorld(), camera.combined);
+		// 6. Draw Player Sprite
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		playerAnimator.draw(batch, playerState);
+		batch.end();
+
+		// 7. Draw Debug Hitboxes
+		if (debugHitbox) {
+			shapeRenderer.setProjectionMatrix(camera.combined);
+			shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+			shapeRenderer.setColor(1, 1, 0, 1); // yellow = player hitbox
+			float hw = playerState.width / 2f;
+			float hh = playerState.height / 2f;
+			shapeRenderer.rect(playerState.x - hw, playerState.y - hh, playerState.width, playerState.height);
+
+			shapeRenderer.setColor(1, 0, 0, 1); // red = wall collision box
+			shapeRenderer.rect(96f, 64f, 32f, 48f);
+
+			shapeRenderer.end();
 		}
 	}
 
@@ -101,11 +132,14 @@ public class Page1Screen implements Screen {
 
 	@Override
 	public void dispose() {
-		if (debugRenderer != null) {
-			debugRenderer.dispose();
+		if (batch != null) {
+			batch.dispose();
 		}
-		if (physicsWorld != null) {
-			physicsWorld.dispose();
+		if (shapeRenderer != null) {
+			shapeRenderer.dispose();
+		}
+		if (playerAnimator != null) {
+			playerAnimator.dispose();
 		}
 	}
 }
