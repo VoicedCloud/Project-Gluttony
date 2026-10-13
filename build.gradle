@@ -23,7 +23,7 @@ allprojects {
   }
 }
 
-configure(subprojects - project(':android')) {
+configure(subprojects - findProject(':android')) { //change it to "project" when its time to configure the android project
   apply plugin: 'java-library'
   java.sourceCompatibility = 17
   java.targetCompatibility = 17

@@ -12,18 +12,18 @@ public class PlayerState {
 
 	// Hitbox size (world units == pixels at 1:1 scale)
 	// Hitbox size, scaled to match the old 0.3 sprite scale
-	public final float width = 32f * 0.3f;   // 9.6
-	public final float height = 64f * 0.3f;  // 19.2
+	public final float width = 32f * 0.3f;   // 9.6f;
+	public final float height = 64f * 0.3f;  // 19.2f;
 
 	// Offset from hitbox's bottom-left corner to the sprite frame's bottom-left corner,
 	// i.e. how far to shift when drawing the full 128x128 frame around this hitbox.
 	// Sprite offset/frame size, scaled the same way
-	public final float spriteOffsetX = 48f * 0.3f;   // 14.4
-	public final float spriteOffsetY = 0f * 0.3f;    // 0
-	public final float spriteFrameSize = 128f * 0.3f; // 38.4
+	public final float spriteOffsetX = 48f * 0.3f;   // 14.4f;
+	public final float spriteOffsetY = 0f * 0.3f;    // 0f;
+	public final float spriteFrameSize = 128f * 0.3f; // 38.4f;
 
 	public final float moveSpeed = 90.0f;
-	public final float jumpStrength = 350.0f;
+	public final float jumpStrength = 315.0f;
 	public final float gravity = -1200.0f;
 
 	public WeaponProfile activeWeapon = WeaponProfile.PISTOL;

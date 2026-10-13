@@ -1,7 +1,7 @@
 package com.github.glutton.weapons;
 
 public enum WeaponProfile {
-    PISTOL("Pistol", 12, 10, 4500f, 25, 200, 1200, false, 2.5f, 1),
+    PISTOL("Pistol", 12, 10, 700f, 25, 200, 1200, false, 2.5f, 1),
     ASSAULT_RIFLE("Assault Rifle", 30, 8, 5500f, 15, 110, 1800, true, 4.0f, 1),
     SHOTGUN("Shotgun", 6, 8, 4000f, 18, 750, 2200, false, 12.0f, 8);
 
