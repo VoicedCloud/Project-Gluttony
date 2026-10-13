@@ -36,24 +36,32 @@ public class PlayerController {
         float halfWidth = player.width / 2f;
         float halfHeight = player.height / 2f;
 
-        // 1. HORIZONTAL MOVEMENT & WALL COLLISION
+// 1. HORIZONTAL MOVEMENT & WALL COLLISION
+        boolean isRunning = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+        float currentSpeed = isRunning ? player.runSpeed : player.walkSpeed;
+
         float nextX = player.x;
+        boolean isMoving = false;
+
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            nextX -= player.moveSpeed * delta;
+            nextX -= currentSpeed * delta;
             player.facingRight = false;
+            isMoving = true;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            nextX += player.moveSpeed * delta;
+            nextX += currentSpeed * delta;
             player.facingRight = true;
+            isMoving = true;
         }
+
+        player.movementState = !isMoving ? PlayerState.MovementState.IDLE
+                : (isRunning ? PlayerState.MovementState.RUN : PlayerState.MovementState.WALK);
 
         Rectangle horizontalRect = new Rectangle(nextX - halfWidth, player.y - halfHeight, player.width, player.height);
         if (horizontalRect.overlaps(wall)) {
             if (nextX > player.x) {
-                // moving right into the wall's left edge
                 nextX = wall.x - halfWidth;
             } else if (nextX < player.x) {
-                // moving left into the wall's right edge
                 nextX = wall.x + wall.width + halfWidth;
             }
         }

@@ -1,0 +1,6 @@
+Layer 3 should move4 with the ground or relative to the ground
+
+layer 2 should move along the player location
+
+layer 1 should move along the player/2 + the player location
+
