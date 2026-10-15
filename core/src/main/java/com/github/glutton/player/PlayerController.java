@@ -4,146 +4,206 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.TimeUtils;
 import com.github.glutton.weapons.WeaponProfile;
 import com.github.glutton.weapons.BulletManager;
+import com.github.glutton.weapons.WeaponState;
+import com.github.glutton.world.LevelCollision;
+import com.github.glutton.player.PlayerGunRenderer;
 
 public class PlayerController {
 
-    private final BulletManager bulletManager;
+	private final OrthographicCamera camera;
+	private final Vector3 mouseWorldPos = new Vector3();
+	private final BulletManager bulletManager;
+	private final PlayerGunRenderer gunRenderer;
 
-    private final OrthographicCamera camera;
-    private final Vector3 mouseWorldPos = new Vector3();
+	public PlayerController(OrthographicCamera camera, BulletManager bulletManager, PlayerGunRenderer gunRenderer) {
+		this.camera = camera;
+		this.bulletManager = bulletManager;
+		this.gunRenderer = gunRenderer;
+	}
 
-    private final float FLOOR_TOP = 64.0f;
-    private final Rectangle floor = new Rectangle(-5000f, 0f, 15000f, FLOOR_TOP);
-    private final Rectangle wall = new Rectangle(96f, 64f, 32f, 48f);
+	public void update(PlayerState player, float delta, LevelCollision collision) {
+		if (delta <= 0f) {
+			delta = 1f / 60f;
+		}
+		if (delta > 0.1f) {
+			delta = 0.1f;
+		}
 
-    public PlayerController(OrthographicCamera camera, BulletManager bulletManager) {
-        this.camera = camera;
-        this.bulletManager = bulletManager;
-    }
+		handleMovement(player, delta, collision);
+		handleAiming(player);
+		handleWeaponInput(player);
+		handleFiring(player);
 
-    public void update(PlayerState player, float delta) {
-        if (delta <= 0f) {
-            delta = 1f / 60f;
-        }
-        if (delta > 0.1f) {
-            delta = 0.1f;
-        }
+		camera.position.set(player.x, player.y + 32f, 0);
+		camera.update();
+	}
 
-        float halfWidth = player.width / 2f;
-        float halfHeight = player.height / 2f;
+	private void handleMovement(PlayerState player, float delta, LevelCollision collision) {
+		float halfWidth = player.width / 2f;
+		float halfHeight = player.height / 2f;
+		Rectangle wall = collision.wall;
 
-// 1. HORIZONTAL MOVEMENT & WALL COLLISION
-        boolean isRunning = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
-        float currentSpeed = isRunning ? player.runSpeed : player.walkSpeed;
+		boolean isRunning = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+		float currentSpeed = isRunning ? player.runSpeed : player.walkSpeed;
 
-        float nextX = player.x;
-        boolean isMoving = false;
+		float nextX = player.x;
+		boolean isMoving = false;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            nextX -= currentSpeed * delta;
-            player.facingRight = false;
-            isMoving = true;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            nextX += currentSpeed * delta;
-            player.facingRight = true;
-            isMoving = true;
-        }
+		if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+			nextX -= currentSpeed * delta;
+			isMoving = true;
+		}
+		if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+			nextX += currentSpeed * delta;
+			isMoving = true;
+		}
 
-        player.movementState = !isMoving ? PlayerState.MovementState.IDLE
-                : (isRunning ? PlayerState.MovementState.RUN : PlayerState.MovementState.WALK);
+		player.movementState = !isMoving ? PlayerState.MovementState.IDLE
+			: (isRunning ? PlayerState.MovementState.RUN : PlayerState.MovementState.WALK);
 
-        Rectangle horizontalRect = new Rectangle(nextX - halfWidth, player.y - halfHeight, player.width, player.height);
-        if (horizontalRect.overlaps(wall)) {
-            if (nextX > player.x) {
-                nextX = wall.x - halfWidth;
-            } else if (nextX < player.x) {
-                nextX = wall.x + wall.width + halfWidth;
-            }
-        }
-        player.x = nextX;
+		Rectangle horizontalRect = new Rectangle(nextX - halfWidth, player.y - halfHeight, player.width, player.height);
+		if (horizontalRect.overlaps(wall)) {
+			if (nextX > player.x) {
+				nextX = wall.x - halfWidth;
+			} else if (nextX < player.x) {
+				nextX = wall.x + wall.width + halfWidth;
+			}
+		}
+		player.x = nextX;
 
-        // Jump
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-            if (player.isGrounded) {
-                player.velocityY = player.jumpStrength;
-                player.isGrounded = false;
-            } else if (player.canDoubleJump) {
-                player.velocityY = player.jumpStrength;
-                player.canDoubleJump = false;
-            }
-        }
+		if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+			if (player.isGrounded) {
+				player.velocityY = player.jumpStrength;
+				player.isGrounded = false;
+			} else if (player.canDoubleJump) {
+				player.velocityY = player.jumpStrength;
+				player.canDoubleJump = false;
+			}
+		}
 
-        // Gravity
-        player.velocityY += player.gravity * delta;
-        player.y += player.velocityY * delta;
+		player.velocityY += player.gravity * delta;
+		player.y += player.velocityY * delta;
 
-        // 3. FLOOR & WALL VERTICAL COLLISION (unified: treat pillar top as ground where it overlaps)
-        boolean xOverlapsWall = (player.x + halfWidth > wall.x) && (player.x - halfWidth < wall.x + wall.width);
-        float effectiveGroundTop = xOverlapsWall ? (wall.y + wall.height) : FLOOR_TOP;
+		boolean xOverlapsWall = (player.x + halfWidth > wall.x) && (player.x - halfWidth < wall.x + wall.width);
+		float effectiveGroundTop = xOverlapsWall ? (wall.y + wall.height) : collision.floorTop;
 
-        boolean groundedThisFrame = false;
-        if (player.velocityY <= 0f && (player.y - halfHeight) <= effectiveGroundTop) {
-            player.y = effectiveGroundTop + halfHeight;
-            player.velocityY = 0f;
-            groundedThisFrame = true;
-        }
+		boolean groundedThisFrame = false;
+		if (player.velocityY <= 0f && (player.y - halfHeight) <= effectiveGroundTop) {
+			player.y = effectiveGroundTop + halfHeight;
+			player.velocityY = 0f;
+			groundedThisFrame = true;
+		}
 
-        player.isGrounded = groundedThisFrame;
-        if (player.isGrounded) {
-            player.canDoubleJump = true;
-        }
+		player.isGrounded = groundedThisFrame;
+		if (player.isGrounded) {
+			player.canDoubleJump = true;
+		}
+	}
 
-        // Aim angle
-        mouseWorldPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-        camera.unproject(mouseWorldPos);
-        player.aimAngleRad = (float) Math.atan2(mouseWorldPos.y - player.y, mouseWorldPos.x - player.x);
+	private void handleAiming(PlayerState player) {
+		mouseWorldPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+		camera.unproject(mouseWorldPos);
 
-        // Weapon switch / reload
-        if (Gdx.input.isKeyJustPressed(Input.Keys.E) && !player.isReloading) {
-            WeaponProfile[] values = WeaponProfile.values();
-            player.activeWeapon = values[(player.activeWeapon.ordinal() + 1) % values.length];
-            player.currentAmmo = player.activeWeapon.maxAmmo;
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R) && !player.isReloading && player.currentAmmo < player.activeWeapon.maxAmmo) {
-            player.isReloading = true;
-            player.reloadStartTime = TimeUtils.millis();
-        }
-        if (player.isReloading && TimeUtils.timeSinceMillis(player.reloadStartTime) >= player.activeWeapon.reloadMs) {
-            player.currentAmmo = player.activeWeapon.maxAmmo;
-            player.isReloading = false;
-        }
+		player.facingRight = mouseWorldPos.x >= player.x;
 
-// Firing logic
-        boolean isShooting = player.activeWeapon.isAutomatic ? Gdx.input.isTouched() : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
-        if (isShooting && !player.isReloading && player.currentAmmo > 0
-                && TimeUtils.timeSinceMillis(player.lastFireTime) >= player.activeWeapon.fireDelayMs) {
-            player.currentAmmo--;
-            player.lastFireTime = TimeUtils.millis();
+		Vector2 muzzlePos = gunRenderer.getMuzzleWorldPos(player);
+		player.weaponState.aimAngleRad = (float) Math.atan2(mouseWorldPos.y - muzzlePos.y, mouseWorldPos.x - muzzlePos.x);
+	}
 
-            WeaponProfile weapon = player.activeWeapon;
-            float gunOffsetY = 10f; // rough world-unit offset so bullets spawn near chest/hand height, not feet
-            for (int i = 0; i < weapon.pellets; i++) {
-                float spreadRad = (float) Math.toRadians(
-                        (Math.random() - 0.5) * 2.0 * weapon.spreadDegrees
-                );
-                float shotAngle = player.aimAngleRad + spreadRad;
-                bulletManager.spawn(player.x, player.y + gunOffsetY, shotAngle, weapon.bulletSpeed, weapon.damage);
-            }
+	public void startReload(WeaponState ws) {
+		if (ws.isReloading || ws.currentAmmo >= ws.activeWeapon.maxAmmo) {
+			return;
+		}
+		ws.isReloading = true;
+		ws.reloadStartTime = TimeUtils.millis();
+		ws.playedSlideLock = false;
+		ws.playedReload1 = false;
+		ws.playedReload2 = false;
+		ws.playedSlideRelease = false;
+	}
 
-            if (player.currentAmmo <= 0) {
-                player.isReloading = true;
-                player.reloadStartTime = TimeUtils.millis();
-            }
-        }
+	private void handleWeaponInput(PlayerState player) {
+		WeaponState ws = player.weaponState;
 
-        // Camera follow with vertical offset to hide the void below the ground
-        float cameraOffsetY = 32f;
-        camera.position.set(player.x, player.y + cameraOffsetY, 0);
-        camera.update();
-    }
+		if (Gdx.input.isKeyJustPressed(Input.Keys.E) && !ws.isReloading) {
+			WeaponProfile[] values = WeaponProfile.values();
+			ws.activeWeapon = values[(ws.activeWeapon.ordinal() + 1) % values.length];
+			ws.currentAmmo = ws.activeWeapon.maxAmmo;
+		}
+
+		// Manual reload trigger via 'R'
+		if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+			startReload(ws);
+		}
+
+		// Consolidated reload update loop
+		if (ws.isReloading) {
+			long elapsed = TimeUtils.timeSinceMillis(ws.reloadStartTime);
+			float progress = Math.min(1f, (float) elapsed / ws.reloadMs);
+
+			if (!ws.playedSlideLock && progress >= 0.00f) {
+				gunRenderer.playSlideLock();
+				ws.playedSlideLock = true;
+			}
+			if (!ws.playedReload1 && progress >= 0.8f) { // Dropped from 0.16f to trigger earlier
+				gunRenderer.playReload1();
+				ws.playedReload1 = true;
+			}
+			if (!ws.playedReload2 && progress >= 0.465f) { // Dropped from 0.67f to trigger earlier
+				gunRenderer.playReload2();
+				ws.playedReload2 = true;
+			}
+			if (!ws.playedSlideRelease && progress >= 0.735f) { // Dropped from 0.88f to trigger earlier
+				gunRenderer.playSlideRelease();
+				ws.playedSlideRelease = true;
+			}
+
+			if (elapsed >= ws.reloadMs) {
+				ws.currentAmmo = ws.activeWeapon.maxAmmo;
+				ws.isReloading = false;
+			}
+		}
+	}
+
+	private void handleFiring(PlayerState player) {
+		WeaponState ws = player.weaponState;
+		boolean isShooting = ws.activeWeapon.isAutomatic ? Gdx.input.isTouched() : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+
+		if (isShooting && !ws.isReloading && ws.currentAmmo > 0
+			&& TimeUtils.timeSinceMillis(ws.lastFireTime) >= ws.activeWeapon.fireDelayMs) {
+			ws.currentAmmo--;
+			ws.lastFireTime = TimeUtils.millis();
+
+			// Play stacking gunshot sound
+			gunRenderer.playShootSound();
+
+			ws.preFireX = player.x;
+			ws.preFireY = player.y;
+			ws.preFireTimestamp = TimeUtils.millis();
+
+			WeaponProfile weapon = ws.activeWeapon;
+
+			float recoilAngle = ws.aimAngleRad + (float) Math.PI;
+			ws.recoilVecX = (float) Math.cos(recoilAngle) * weapon.recoilForce;
+			ws.recoilVecY = (float) Math.sin(recoilAngle) * weapon.recoilForce;
+			ws.recoilTimestamp = TimeUtils.millis();
+
+			Vector2 muzzlePos = gunRenderer.getMuzzleWorldPos(player);
+			for (int i = 0; i < weapon.pellets; i++) {
+				float spreadRad = (float) Math.toRadians((Math.random() - 0.5) * 2.0 * weapon.spreadDegrees);
+				float shotAngle = ws.aimAngleRad + spreadRad;
+				bulletManager.spawn(muzzlePos.x, muzzlePos.y, shotAngle, weapon.bulletSpeed, weapon.damage);
+			}
+
+			if (ws.currentAmmo <= 0) {
+				startReload(ws);
+				return; // Stop firing sequence until reloaded
+			}
+		}
+	}
 }

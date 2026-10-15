@@ -4,9 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.glutton.GluttonGame;
@@ -27,19 +25,15 @@ public class LevelSelectScreen implements Screen {
 	private SceneLoader sceneLoader;
 	private Viewport viewport;
 	private ItemWrapper rootWrapper;
-	private World world; // Keep track of the Box2D World
 
-	// Exit Button Components
 	private TransformComponent exitTransform;
 	private DimensionsComponent exitDimensions;
 	private TintComponent exitHighlightTint;
 
-	// Next Page Button Components
 	private TransformComponent nextPageTransform;
 	private DimensionsComponent nextPageDimensions;
 	private TintComponent nextPageHighlightTint;
 
-	// Play Button Components
 	private TransformComponent playTransform;
 	private DimensionsComponent playDimensions;
 
@@ -55,17 +49,13 @@ public class LevelSelectScreen implements Screen {
 
 		viewport = new StretchViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
-		// FIX: Instantiate Box2D World and pass it to HyperLap2D SceneConfiguration
-		world = new World(new Vector2(0, -10f), true);
 		SceneConfiguration config = new SceneConfiguration();
-		config.setWorld(world);
-
 		sceneLoader = new SceneLoader(config);
 		sceneLoader.loadScene("LevelSelectScreen", viewport);
 
 		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 		rootWrapper = new ItemWrapper(sceneLoader.getRoot(), sceneLoader.getEngine());
-		// Setup Exit Button & its Highlight
+
 		ItemWrapper exitBtn = rootWrapper.getChild("ExitButton");
 		if (exitBtn != null) {
 			int entity = exitBtn.getEntity();
@@ -76,12 +66,9 @@ public class LevelSelectScreen implements Screen {
 		ItemWrapper exitHighlightBtn = rootWrapper.getChild("HIGHLIGHTEDExitButton");
 		if (exitHighlightBtn != null) {
 			exitHighlightTint = ComponentRetriever.get(exitHighlightBtn.getEntity(), TintComponent.class, sceneLoader.getEngine());
-			if (exitHighlightTint != null) {
-				exitHighlightTint.color.a = 0f; // Hide initially
-			}
+			if (exitHighlightTint != null) exitHighlightTint.color.a = 0f;
 		}
 
-		// Setup Next Page Button & its Highlight
 		ItemWrapper nextPageBtn = rootWrapper.getChild("Next_Page");
 		if (nextPageBtn != null) {
 			int entity = nextPageBtn.getEntity();
@@ -92,12 +79,9 @@ public class LevelSelectScreen implements Screen {
 		ItemWrapper nextPageHighlightBtn = rootWrapper.getChild("HIGHLIGHTEDNext_Page");
 		if (nextPageHighlightBtn != null) {
 			nextPageHighlightTint = ComponentRetriever.get(nextPageHighlightBtn.getEntity(), TintComponent.class, sceneLoader.getEngine());
-			if (nextPageHighlightTint != null) {
-				nextPageHighlightTint.color.a = 0f; // Hide initially
-			}
+			if (nextPageHighlightTint != null) nextPageHighlightTint.color.a = 0f;
 		}
 
-		// Setup Play Button
 		ItemWrapper playBtn = rootWrapper.getChild("Play_Button");
 		if (playBtn != null) {
 			int entity = playBtn.getEntity();
@@ -121,42 +105,24 @@ public class LevelSelectScreen implements Screen {
 		mouseVector.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 		viewport.unproject(mouseVector);
 
-		// 1. Process Exit Button
 		if (exitTransform != null && exitDimensions != null) {
 			Rectangle bounds = getEntityBounds(exitTransform, exitDimensions);
 			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
-
-			if (exitHighlightTint != null) {
-				exitHighlightTint.color.a = isHovered ? 1f : 0f;
-			}
-
-			if (isHovered && Gdx.input.justTouched()) {
-				game.setScreen(new MainMenuScreen(game));
-			}
+			if (exitHighlightTint != null) exitHighlightTint.color.a = isHovered ? 1f : 0f;
+			if (isHovered && Gdx.input.justTouched()) game.setScreen(new MainMenuScreen(game));
 		}
 
-		// 2. Process Next Page Button
 		if (nextPageTransform != null && nextPageDimensions != null) {
 			Rectangle bounds = getEntityBounds(nextPageTransform, nextPageDimensions);
 			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
-
-			if (nextPageHighlightTint != null) {
-				nextPageHighlightTint.color.a = isHovered ? 1f : 0f;
-			}
-
-			if (isHovered && Gdx.input.justTouched()) {
-				// TODO: Add page transition logic here
-			}
+			if (nextPageHighlightTint != null) nextPageHighlightTint.color.a = isHovered ? 1f : 0f;
 		}
 
-		// 3. Process Play Button -> Transitions to Page1 Screen
 		if (playTransform != null && playDimensions != null) {
 			Rectangle bounds = getEntityBounds(playTransform, playDimensions);
 			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
-
 			if (isHovered && Gdx.input.justTouched()) {
 				game.playLevelBgm("audio/bgm/page1_theme.mp3");
-
 				game.setScreen(new Page1Screen(game));
 			}
 		}
@@ -175,26 +141,12 @@ public class LevelSelectScreen implements Screen {
 		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 	}
 
-	@Override
-	public void pause() {
-	}
-
-	@Override
-	public void resume() {
-	}
-
-	@Override
-	public void hide() {
-	}
+	@Override public void pause() {}
+	@Override public void resume() {}
+	@Override public void hide() {}
 
 	@Override
 	public void dispose() {
-		if (sceneLoader != null) {
-			sceneLoader = null;
-		}
-		if (world != null) {
-			world.dispose();
-			world = null;
-		}
+		if (sceneLoader != null) sceneLoader = null;
 	}
 }

@@ -1,5 +1,7 @@
 package com.github.glutton.screens;
 
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.Input;
 import com.github.glutton.background.ParallaxBackground;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
@@ -10,144 +12,150 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.glutton.GluttonGame;
-import com.github.glutton.player.PlayerAnimator;
-import com.github.glutton.player.PlayerController;
-import com.github.glutton.player.PlayerState;
+import com.github.glutton.world.GameplaySession;
 import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
-import com.github.glutton.weapons.BulletManager;
 
 public class Page1Screen implements Screen {
 
-    private BulletManager bulletManager;
+	private final GluttonGame game;
+	private SceneLoader sceneLoader;
+	private Viewport viewport;
+	private OrthographicCamera camera;
 
-    private final GluttonGame game;
-    private SceneLoader sceneLoader;
-    private Viewport viewport;
-    private OrthographicCamera camera;
+	private SpriteBatch batch;
+	private ShapeRenderer shapeRenderer;
+	private ParallaxBackground background;
 
-    private SpriteBatch batch;
-    private ShapeRenderer shapeRenderer;
+	private boolean debugHitbox = false;
+	private GameplaySession gameplaySession;
 
-    private PlayerState playerState;
-    private PlayerController playerController;
-    private PlayerAnimator playerAnimator;
+	public Page1Screen(GluttonGame game) {
+		this.game = game;
+	}
 
-    private ParallaxBackground background;
+	@Override
+	public void show() {
+		camera = new OrthographicCamera();
+		camera.zoom = 0.25f; // Set optimal starting zoom level[cite: 13]
+		viewport = new FitViewport(1280f, 720f, camera);
 
-    private boolean debugHitbox = true;
+		background = new ParallaxBackground();
 
-    public Page1Screen(GluttonGame game) {
-        this.game = game;
-    }
+		SceneConfiguration config = new SceneConfiguration();
+		sceneLoader = new SceneLoader(config);
+		sceneLoader.loadScene("Page1", viewport);
 
-    @Override
-    public void show() {
-        camera = new OrthographicCamera();
-        camera.zoom = 0.25f;
-        viewport = new FitViewport(1280f, 720f, camera);
+		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 
-        background = new ParallaxBackground();
+		batch = new SpriteBatch();
+		shapeRenderer = new ShapeRenderer();
 
-        // Level art only — no player systems/components attached here anymore
-        SceneConfiguration config = new SceneConfiguration();
-        sceneLoader = new SceneLoader(config);
-        sceneLoader.loadScene("Page1", viewport);
+		gameplaySession = new GameplaySession(
+			camera,
+			"sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
+			"sprites/weapons/01 - Individual sprites/Bullets & Ammo/Glock - P80/Bullet.png"
+		);
+	}
 
-        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+	@Override
+	public void render(float delta) {
+		viewport.apply();
+		Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        batch = new SpriteBatch();
-        shapeRenderer = new ShapeRenderer();
+		if (Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
+			debugHitbox = !debugHitbox;
+		}
 
-        playerState = new PlayerState();
-        playerState.x = 0f;
-        playerState.y = 300f; // spawn above the floor, let it fall and land
-        bulletManager = new BulletManager();
-        playerController = new PlayerController(camera, bulletManager);
-        playerAnimator = new PlayerAnimator();
-    }
+		// Zoom controls (+ / - keys) with 10% increments and safety bounds
+		if (Gdx.input.isKeyJustPressed(Input.Keys.PLUS) || Gdx.input.isKeyJustPressed(Input.Keys.EQUALS) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_ADD)) {
+			camera.zoom = Math.max(0.05f, camera.zoom / 1.1f);
+		}
+		if (Gdx.input.isKeyJustPressed(Input.Keys.MINUS) || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_SUBTRACT)) {
+			camera.zoom = Math.min(1.5f, camera.zoom * 1.1f);
+		}
 
-    @Override
-    public void render(float delta) {
-        // 1. Clear screen and apply viewport first
-        viewport.apply();
-        Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		gameplaySession.update(delta);
 
-        // 2. Update player logic and animator state time
-        playerController.update(playerState, delta);
-        playerAnimator.update(delta);
+		float viewWidth = camera.viewportWidth * camera.zoom;
+		float viewHeight = camera.viewportHeight * camera.zoom;
+		float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+		float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
-        bulletManager.update(delta);
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
+		batch.end();
 
-        // 3. Calculate camera view boundaries for parallax (including vertical bounds)
-        float viewWidth = camera.viewportWidth * camera.zoom;
-        float viewHeight = camera.viewportHeight * camera.zoom;
-        float cameraLeftEdge = camera.position.x - viewWidth / 2f;
-        float cameraBottomEdge = camera.position.y - viewHeight / 2f;
+		sceneLoader.getEngine().setDelta(delta);
+		sceneLoader.getEngine().process();
 
-        // 4. Draw Parallax Background anchored to the camera view box
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
-        batch.end();
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		gameplaySession.render(batch, shapeRenderer);
+		batch.end();
 
-        // 5. Draw HyperLap2D static level art
-        sceneLoader.getEngine().setDelta(delta);
-        sceneLoader.getEngine().process();
+		// Render bullet motion trails
+		gameplaySession.renderTrails(shapeRenderer, camera.combined);
 
-        // 6. Draw Player Sprite
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        playerAnimator.draw(batch, playerState);
-        batch.end();
+		shapeRenderer.setProjectionMatrix(camera.combined);
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		gameplaySession.renderMuzzleFlash(shapeRenderer);
+		shapeRenderer.end();
 
-        bulletManager.draw(shapeRenderer, camera.combined);
+		if (debugHitbox) {
+			shapeRenderer.setProjectionMatrix(camera.combined);
+			shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
-        // 7. Draw Debug Hitboxes
-//		if (debugHitbox) {
-//			shapeRenderer.setProjectionMatrix(camera.combined);
-//			shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-//
-//			shapeRenderer.setColor(1, 1, 0, 1); // yellow = player hitbox
-//			float hw = playerState.width / 2f;
-//			float hh = playerState.height / 2f;
-//			shapeRenderer.rect(playerState.x - hw, playerState.y - hh, playerState.width, playerState.height);
-//
-//			shapeRenderer.setColor(1, 0, 0, 1); // red = wall collision box
-//			shapeRenderer.rect(96f, 64f, 32f, 48f);
-//
-//			shapeRenderer.end();
-//		}
-    }
+			shapeRenderer.setColor(1, 1, 0, 1);
+			float hw = gameplaySession.getPlayerState().width / 2f;
+			float hh = gameplaySession.getPlayerState().height / 2f;
+			shapeRenderer.rect(gameplaySession.getPlayerState().x - hw, gameplaySession.getPlayerState().y - hh, gameplaySession.getPlayerState().width, gameplaySession.getPlayerState().height);
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
-    }
+			shapeRenderer.setColor(1, 0, 0, 1);
+			shapeRenderer.rect(96f, 64f, 32f, 48f);
 
-    @Override
-    public void pause() {
-    }
+			shapeRenderer.end();
+			Vector2 muzzle = gameplaySession.getGunRenderer().getMuzzleWorldPos(gameplaySession.getPlayerState());
+			shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+			shapeRenderer.setColor(1, 0, 1, 1);
+			shapeRenderer.circle(muzzle.x, muzzle.y, 2f, 8);
+			shapeRenderer.end();
+		}
 
-    @Override
-    public void resume() {
-    }
+		// Keep camera locked onto player at the standard vertical offset level[cite: 13]
+		camera.position.set(gameplaySession.getPlayerState().x, gameplaySession.getPlayerState().y + 32f, 0);
+		camera.update();
+	}
 
-    @Override
-    public void hide() {
-    }
+	@Override
+	public void resize(int width, int height) {
+		viewport.update(width, height, true);
+	}
 
-    @Override
-    public void dispose() {
-        if (batch != null) {
-            batch.dispose();
-        }
-        if (shapeRenderer != null) {
-            shapeRenderer.dispose();
-        }
-        if (playerAnimator != null) {
-            playerAnimator.dispose();
-        }
-    }
+	@Override
+	public void pause() {
+	}
+
+	@Override
+	public void resume() {
+	}
+
+	@Override
+	public void hide() {
+	}
+
+	@Override
+	public void dispose() {
+		if (batch != null) {
+			batch.dispose();
+		}
+		if (shapeRenderer != null) {
+			shapeRenderer.dispose();
+		}
+		if (gameplaySession != null) {
+			gameplaySession.dispose();
+		}
+	}
 }
