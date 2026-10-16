@@ -76,14 +76,37 @@ public class PlayerController {
         }
         player.x = nextX;
 
+// Inside handleMovement(), when SPACE is pressed:
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             if (player.isGrounded) {
                 player.velocityY = player.jumpStrength;
+                player.jumpStartY = player.y;
+                player.maxJumpHeight = (player.jumpStrength * player.jumpStrength) / (2f * Math.abs(player.gravity));
+                player.peakY = player.y;
                 player.isGrounded = false;
             } else if (player.canDoubleJump) {
                 player.velocityY = player.jumpStrength;
+                player.jumpStartY = player.y;
+                player.maxJumpHeight = (player.jumpStrength * player.jumpStrength) / (2f * Math.abs(player.gravity));
+                player.peakY = player.y;
                 player.canDoubleJump = false;
             }
+        }
+
+// Inside handleMovement(), replace or update movementState assignment:
+        if (!player.isGrounded) {
+            if (player.velocityY > 0f) {
+                player.movementState = PlayerState.MovementState.JUMP;
+                if (player.y > player.peakY) {
+                    player.peakY = player.y;
+                }
+            } else {
+                player.movementState = PlayerState.MovementState.FALL;
+            }
+        } else {
+            player.peakY = player.y; // Reset peak when grounded
+            player.movementState = !isMoving ? PlayerState.MovementState.IDLE
+                    : (isRunning ? PlayerState.MovementState.RUN : PlayerState.MovementState.WALK);
         }
 
         player.velocityY += player.gravity * delta;

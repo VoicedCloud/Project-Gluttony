@@ -39,9 +39,13 @@ public class PlayerState {
 	}
 
 	public enum MovementState {
-		IDLE, WALK, RUN
+		IDLE, WALK, RUN, JUMP, FALL
 	}
 	public MovementState movementState = MovementState.IDLE;
+
+	public float jumpStartY = 0f;
+	public float peakY = 0f;
+	public float maxJumpHeight = 0f;
 
 	public final float width = 32f * 0.3f;
 	public final float height = 64f * 0.3f;
