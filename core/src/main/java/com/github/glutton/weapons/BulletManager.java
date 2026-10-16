@@ -1,7 +1,6 @@
 package com.github.glutton.weapons;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -10,13 +9,14 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class BulletManager {
 
 	public static class Impact {
-
 		public final float x, y;
 		public final int damage;
 		public float age = 0f;
@@ -31,22 +31,29 @@ public class BulletManager {
 	private final List<Bullet> bullets = new ArrayList<>();
 	private final ImpactManager impactManager;
 
-	private final Texture bulletTexture;
-	private final TextureRegion bulletRegion;
+	private final Map<WeaponProfile, Texture> bulletTextures = new EnumMap<>(WeaponProfile.class);
+	private final Map<WeaponProfile, TextureRegion> bulletRegions = new EnumMap<>(WeaponProfile.class);
 
 	private static final float DEFAULT_LIFESPAN = 1.5f;
 	private static final float BULLET_RADIUS = 1.5f;
 
-	public BulletManager(String texturePath, ImpactManager impactManager) {
+	public BulletManager(String defaultTexturePath, ImpactManager impactManager) {
 		this.impactManager = impactManager;
-		bulletTexture = new Texture(Gdx.files.internal(texturePath));
-		bulletRegion = new TextureRegion(bulletTexture);
+		for (WeaponProfile wp : WeaponProfile.values()) {
+			String path = wp.bulletTexturePath;
+			if (!Gdx.files.internal(path).exists()) {
+				path = defaultTexturePath;
+			}
+			Texture tex = new Texture(Gdx.files.internal(path));
+			bulletTextures.put(wp, tex);
+			bulletRegions.put(wp, new TextureRegion(tex));
+		}
 	}
 
-	public void spawn(float x, float y, float angleRad, float speed, int damage) {
+	public void spawn(float x, float y, float angleRad, float speed, int damage, WeaponProfile weapon) {
 		float vx = (float) Math.cos(angleRad) * speed;
 		float vy = (float) Math.sin(angleRad) * speed;
-		bullets.add(new Bullet(x, y, vx, vy, damage, DEFAULT_LIFESPAN));
+		bullets.add(new Bullet(x, y, vx, vy, damage, DEFAULT_LIFESPAN, weapon));
 	}
 
 	public void update(float delta) {
@@ -75,7 +82,6 @@ public class BulletManager {
 				Vector2 p1 = b.trail.get(i);
 				Vector2 p2 = b.trail.get(i + 1);
 
-				// Calculate alpha smoothly based on how far back the point is in the array
 				float alpha1 = 1f - ((float) i / b.trail.size);
 				float alpha2 = 1f - ((float) (i + 1) / b.trail.size);
 				float avgAlpha = (alpha1 + alpha2) / 2f;
@@ -90,11 +96,15 @@ public class BulletManager {
 
 	public void draw(SpriteBatch batch) {
 		for (Bullet b : bullets) {
+			TextureRegion region = bulletRegions.get(b.weapon);
+			if (region == null) {
+				region = bulletRegions.get(WeaponProfile.PISTOL);
+			}
 			float angleDeg = (float) Math.toDegrees(Math.atan2(b.vy, b.vx));
-			float width = bulletTexture.getWidth() * 0.15f;
-			float height = bulletTexture.getHeight() * 0.15f;
+			float width = region.getRegionWidth() * 0.15f;
+			float height = region.getRegionHeight() * 0.15f;
 
-			batch.draw(bulletRegion,
+			batch.draw(region,
 				b.x - width / 2f, b.y - height / 2f,
 				width / 2f, height / 2f,
 				width, height,
@@ -120,8 +130,10 @@ public class BulletManager {
 	}
 
 	public void dispose() {
-		if (bulletTexture != null) {
-			bulletTexture.dispose();
+		for (Texture tex : bulletTextures.values()) {
+			if (tex != null) {
+				tex.dispose();
+			}
 		}
 	}
 }
