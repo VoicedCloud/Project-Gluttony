@@ -38,7 +38,7 @@ public class PlayerAnimator {
         jumpTexture = new Texture(Gdx.files.internal("sprites/player/JumpW.png"));
         jumpFrames = TextureRegion.split(jumpTexture, 128, 128)[0];
 
-        fallTexture = new Texture(Gdx.files.internal("sprites/player/Attack.png"));
+        fallTexture = new Texture(Gdx.files.internal("sprites/player/Fall.png"));
         fallFrames = TextureRegion.split(fallTexture, 128, 128)[0];
     }
 
