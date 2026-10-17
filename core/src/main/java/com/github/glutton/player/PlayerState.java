@@ -16,10 +16,6 @@ public class PlayerState {
 	public final float gunPivotFrameX = 61f;
 	public final float gunPivotFrameY = 85f;
 
-	public float gunScale = 0.15f;
-	public float muzzleOffsetX = 50f;
-	public float muzzleOffsetY = 37f;
-
 	public float getSpriteDrawX() {
 		return (x - width / 2f) - spriteOffsetX;
 	}

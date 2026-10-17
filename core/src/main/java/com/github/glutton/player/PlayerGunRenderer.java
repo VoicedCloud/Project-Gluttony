@@ -29,11 +29,6 @@ public class PlayerGunRenderer {
 	private final Map<WeaponProfile, WeaponAssets> weaponAssetsMap = new EnumMap<>(WeaponProfile.class);
 
 	private final Sound shootSound;
-	private final Sound slideLockSound;
-	private final Sound reload1Sound;
-	private final Sound reload2Sound;
-	private final Sound slideReleaseSound;
-
 	private final Vector2 muzzleWorld = new Vector2();
 
 	public PlayerGunRenderer(String defaultTexturePath) {
@@ -46,24 +41,63 @@ public class PlayerGunRenderer {
 			}
 			assets.gunRegion = new TextureRegion(assets.gunTexture);
 
-			assets.shootTexture = new Texture(Gdx.files.internal(wp.shootTexturePath));
+			try {
+				assets.shootTexture = new Texture(Gdx.files.internal(wp.shootTexturePath));
+			} catch (Exception e) {
+				assets.shootTexture = new Texture(Gdx.files.internal("sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[SHOOT WITH CASING AND MUZZLE FLASH] Glock - P80.png"));
+			}
 			TextureRegion[][] shootTmp = TextureRegion.split(assets.shootTexture, wp.frameWidth, wp.frameHeight);
 			assets.shootAnimation = new Animation<>(0.02f, shootTmp[0]);
 			assets.shootAnimation.setPlayMode(Animation.PlayMode.NORMAL);
 
-			assets.reloadTexture = new Texture(Gdx.files.internal(wp.reloadTexturePath));
+			try {
+				assets.reloadTexture = new Texture(Gdx.files.internal(wp.reloadTexturePath));
+			} catch (Exception e) {
+				assets.reloadTexture = new Texture(Gdx.files.internal("sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[RELOAD] Glock - P80.png"));
+			}
 			TextureRegion[][] reloadTmp = TextureRegion.split(assets.reloadTexture, wp.frameWidth, wp.frameHeight);
-			assets.reloadAnimation = new Animation<>(0.075f, reloadTmp[0]);
+			TextureRegion[] origReload = reloadTmp[0];
+
+			TextureRegion[] combinedReload = new TextureRegion[origReload.length * 2];
+			for (int i = 0; i < origReload.length; i++) {
+				if (wp.reverseStitchOrder) {
+					combinedReload[i] = origReload[origReload.length - 1 - i];
+					combinedReload[origReload.length + i] = origReload[i];
+				} else {
+					combinedReload[i] = origReload[i];
+					combinedReload[origReload.length + i] = origReload[origReload.length - 1 - i];
+				}
+			}
+
+			float totalReloadDurationSeconds = wp.reloadMs / 1000f;
+			float frameDuration = totalReloadDurationSeconds / combinedReload.length;
+			assets.reloadAnimation = new Animation<>(frameDuration, combinedReload);
 			assets.reloadAnimation.setPlayMode(Animation.PlayMode.NORMAL);
 
 			weaponAssetsMap.put(wp, assets);
+
+			// Load weapon-specific shoot sound
+			if (wp.shootSoundPath != null && !wp.shootSoundPath.isEmpty()) {
+				try {
+					wp.shootSound = Gdx.audio.newSound(Gdx.files.internal(wp.shootSoundPath));
+				} catch (Exception e) {
+					// Fallback if audio file is missing
+				}
+			}
+
+			// Load reload milestone sounds
+			for (WeaponProfile.ReloadMilestone m : wp.milestones) {
+				if (m.soundPath != null && !m.soundPath.isEmpty()) {
+					try {
+						m.sound = Gdx.audio.newSound(Gdx.files.internal(m.soundPath));
+					} catch (Exception e) {
+						// Fallback if missing
+					}
+				}
+			}
 		}
 
 		shootSound = Gdx.audio.newSound(Gdx.files.internal("audio/weapon/Snake's Authentic Gun Sounds/Full Sound/9mm/WAV/9mm Single.wav"));
-		slideLockSound = Gdx.audio.newSound(Gdx.files.internal("audio/weapon/Snake's Authentic Gun Sounds/& More/Pistol/WAV/9mm Pistol Slide Lock.wav"));
-		reload1Sound = Gdx.audio.newSound(Gdx.files.internal("audio/weapon/Snake's Authentic Gun Sounds/& More/Pistol/WAV/9mm Pistol Reload 1.wav"));
-		reload2Sound = Gdx.audio.newSound(Gdx.files.internal("audio/weapon/Snake's Authentic Gun Sounds/& More/Pistol/WAV/9mm Pistol Reload 2.wav"));
-		slideReleaseSound = Gdx.audio.newSound(Gdx.files.internal("audio/weapon/Snake's Authentic Gun Sounds/& More/Pistol/WAV/9mm Pistol Slide Release.wav"));
 	}
 
 	public void draw(SpriteBatch batch, PlayerState player) {
@@ -79,14 +113,8 @@ public class PlayerGunRenderer {
 			long elapsedReload = TimeUtils.timeSinceMillis(ws.reloadStartTime);
 			float reloadProgress = Math.min(1f, (float) elapsedReload / wp.reloadMs);
 
-			float totalAnimDuration = assets.reloadAnimation.getAnimationDuration();
-			float animTime;
-			if (reloadProgress <= 0.5f) {
-				animTime = (reloadProgress / 0.5f) * totalAnimDuration;
-			} else {
-				animTime = (2f - (reloadProgress / 0.5f)) * totalAnimDuration;
-			}
-			currentRegion = assets.reloadAnimation.getKeyFrame(Math.max(0f, Math.min(animTime, totalAnimDuration)));
+			float animTime = reloadProgress * assets.reloadAnimation.getAnimationDuration();
+			currentRegion = assets.reloadAnimation.getKeyFrame(animTime);
 		} else {
 			long elapsedFire = TimeUtils.timeSinceMillis(ws.lastFireTime);
 			if (elapsedFire < wp.fireDelayMs) {
@@ -101,8 +129,8 @@ public class PlayerGunRenderer {
 			currentRegion.flip(false, true);
 		}
 
-		float gunWidth = wp.frameWidth * player.gunScale;
-		float gunHeight = wp.frameHeight * player.gunScale;
+		float gunWidth = wp.frameWidth * wp.gunScale;
+		float gunHeight = wp.frameHeight * wp.gunScale;
 
 		batch.draw(currentRegion,
 			pivotX, pivotY - gunHeight / 2f,
@@ -114,6 +142,7 @@ public class PlayerGunRenderer {
 
 	public void drawMuzzleFlash(ShapeRenderer shapeRenderer, PlayerState player) {
 		WeaponState ws = player.weaponState;
+		WeaponProfile wp = ws.activeWeapon;
 		long elapsedFire = TimeUtils.timeSinceMillis(ws.lastFireTime);
 		if (elapsedFire < 60f) {
 			Vector2 muzzle = getMuzzleWorldPos(player);
@@ -125,7 +154,7 @@ public class PlayerGunRenderer {
 			Gdx.gl.glEnable(GL20.GL_BLEND);
 			Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 
-			float scale = player.gunScale;
+			float scale = wp.gunScale;
 
 			shapeRenderer.setColor(1f, 0.9f, 0.5f, 0.25f);
 			shapeRenderer.circle(flashX, flashY, 7f * scale, 12);
@@ -149,13 +178,13 @@ public class PlayerGunRenderer {
 		WeaponState ws = player.weaponState;
 		WeaponProfile wp = ws.activeWeapon;
 
-		float gunWidth = wp.frameWidth * player.gunScale;
-		float gunHeight = wp.frameHeight * player.gunScale;
+		float gunWidth = wp.frameWidth * wp.gunScale;
+		float gunHeight = wp.frameHeight * wp.gunScale;
 
 		boolean flipY = Math.cos(ws.aimAngleRad) < 0;
 
-		float localX = player.muzzleOffsetX * player.gunScale;
-		float localY = player.muzzleOffsetY * player.gunScale;
+		float localX = wp.muzzleOffsetX * wp.gunScale;
+		float localY = wp.muzzleOffsetY * wp.gunScale;
 
 		if (flipY) {
 			localY = gunHeight - localY;
@@ -175,11 +204,13 @@ public class PlayerGunRenderer {
 		return muzzleWorld;
 	}
 
-	public void playShootSound() { shootSound.play(); }
-	public void playSlideLock() { slideLockSound.play(); }
-	public void playReload1() { reload1Sound.play(); }
-	public void playReload2() { reload2Sound.play(); }
-	public void playSlideRelease() { slideReleaseSound.play(); }
+	public void playShootSound(WeaponProfile wp) {
+		if (wp.shootSound != null) {
+			wp.shootSound.play();
+		} else if (shootSound != null) {
+			shootSound.play();
+		}
+	}
 
 	public void dispose() {
 		for (WeaponAssets assets : weaponAssetsMap.values()) {
@@ -187,10 +218,16 @@ public class PlayerGunRenderer {
 			if (assets.shootTexture != null) assets.shootTexture.dispose();
 			if (assets.reloadTexture != null) assets.reloadTexture.dispose();
 		}
-		shootSound.dispose();
-		slideLockSound.dispose();
-		reload1Sound.dispose();
-		reload2Sound.dispose();
-		slideReleaseSound.dispose();
+		for (WeaponProfile wp : WeaponProfile.values()) {
+			if (wp.shootSound != null) {
+				wp.shootSound.dispose();
+			}
+			for (WeaponProfile.ReloadMilestone m : wp.milestones) {
+				if (m.sound != null) {
+					m.sound.dispose();
+				}
+			}
+		}
+		if (shootSound != null) shootSound.dispose();
 	}
 }

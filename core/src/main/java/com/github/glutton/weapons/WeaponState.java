@@ -4,7 +4,6 @@ public class WeaponState {
 
 	public WeaponProfile activeWeapon = WeaponProfile.PISTOL;
 	public int currentAmmo = WeaponProfile.PISTOL.maxAmmo;
-	public int reloadMs = 2040;
 	public long reloadStartTime = 0;
 	public boolean isReloading = false;
 	public long lastFireTime = 0;
