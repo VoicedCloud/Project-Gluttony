@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.TimeUtils;
-import com.github.glutton.player.PlayerState;
 
 public class WeaponDebugOverlay {
 
@@ -54,21 +53,6 @@ public class WeaponDebugOverlay {
 
 			shapeRenderer.setColor(Color.RED);
 			shapeRenderer.circle(b.x, b.y, bulletRadius + 1f, 8);
-		}
-
-		long recoilAge = TimeUtils.timeSinceMillis(ctx.player.weaponState.recoilTimestamp);
-		if (recoilAge < 300) {
-			float alpha = 1f - (recoilAge / 300f);
-			shapeRenderer.setColor(1f, 0.5f, 0f, alpha);
-			shapeRenderer.line(ctx.player.x, ctx.player.y,
-				ctx.player.x + ctx.player.weaponState.recoilVecX, ctx.player.y + ctx.player.weaponState.recoilVecY);
-		}
-
-		if (TimeUtils.timeSinceMillis(ctx.player.weaponState.preFireTimestamp) < 1000) {
-			shapeRenderer.setColor(Color.PINK);
-			float s = 3f;
-			shapeRenderer.line(ctx.player.weaponState.preFireX - s, ctx.player.weaponState.preFireY, ctx.player.weaponState.preFireX + s, ctx.player.weaponState.preFireY);
-			shapeRenderer.line(ctx.player.weaponState.preFireX, ctx.player.weaponState.preFireY - s, ctx.player.weaponState.preFireX, ctx.player.weaponState.preFireY + s);
 		}
 
 		for (ImpactManager.Impact imp : ctx.bulletManager.getRecentImpacts()) {

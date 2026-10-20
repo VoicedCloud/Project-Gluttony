@@ -69,7 +69,6 @@ public class PlayerAnimator {
                 frame = walkAnimation.getKeyFrame(stateTime);
                 break;
             case JUMP:
-                // Map progress from jumpStartY to maxJumpHeight (0.0 to 1.0)
                 float jumpProgress = 0f;
                 if (player.maxJumpHeight > 0f) {
                     jumpProgress = Math.min(1f, Math.max(0f, (player.y - player.jumpStartY) / player.maxJumpHeight));
@@ -78,7 +77,6 @@ public class PlayerAnimator {
                 frame = jumpFrames[jumpIndex];
                 break;
             case FALL:
-                // Map progress from peakY downwards based on fall distance
                 float fallDistance = player.peakY - player.y;
                 float fallProgress = 0f;
                 if (player.maxJumpHeight > 0f) {

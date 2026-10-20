@@ -3,7 +3,7 @@ package com.github.glutton.weapons;
 import com.badlogic.gdx.audio.Sound;
 
 public enum WeaponProfile {
-	PISTOL("Glock P80", 12, 10, 500f, 3, 150, 2040, false, 2.5f, 1,
+	PISTOL("Glock P80", 12, 10, 500f, 3, 150, 2040, false, 1.0f, 1,
 		"sprites/weapons/Glock - P80.png",
 		"sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[SHOOT WITH CASING AND MUZZLE FLASH] Glock - P80.png",
 		"sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[RELOAD] Glock - P80.png",
@@ -17,7 +17,7 @@ public enum WeaponProfile {
 			new ReloadMilestone(0.88f, "audio/weapon/Snake's Authentic Gun Sounds/& More/Pistol/WAV/9mm Pistol Slide Release.wav")
 		}
 	),
-	ASSAULT_RIFLE("AK-47", 30, 8, 5500f, 15, 110, 3000, true, 4.0f, 1,
+	ASSAULT_RIFLE("AK-47", 30, 8, 5500f, 15, 110, 3000, true, 3.0f, 1,
 		"sprites/weapons/01 - Individual sprites/Guns/AK 47 [96x48].png",
 		"sprites/weapons/02 - Sprite sheets/AK 47 [96x48]/[SHOOT WITH CASING AND MUZZLE FLASH] AK 47.png",
 		"sprites/weapons/02 - Sprite sheets/AK 47 [96x48]/[RELOAD] AK 47.png",
@@ -39,6 +39,7 @@ public enum WeaponProfile {
 		64, 32, 0.15f, 81f, 9.5f, false,
 		new ReloadMilestone[]{}
 	),
+	
 	GUUN("GUUN", 10, 999, 5000f, 1, 500, 1500, false, 10.0f, 1,
 		"sprites/weapons/Glock - P80.png",
 		"sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[SHOOT WITH CASING AND MUZZLE FLASH] Glock - P80.png",
@@ -51,7 +52,6 @@ public enum WeaponProfile {
 	);
 
 	public static class ReloadMilestone {
-
 		public final float progress;
 		public final String soundPath;
 		public Sound sound;
@@ -86,12 +86,13 @@ public enum WeaponProfile {
 	public final float muzzleOffsetY;
 	public final boolean reverseStitchOrder;
 	public final ReloadMilestone[] milestones;
+        // public final boolean hasKnockback; //set it up later
 
 	WeaponProfile(String name, int maxAmmo, int damage, float bulletSpeed, float spreadDegrees,
-		long fireDelayMs, long reloadMs, boolean isAutomatic, float recoilForce, int pellets,
-		String idleTexturePath, String shootTexturePath, String reloadTexturePath, String bulletTexturePath,
-		String shootSoundPath, int frameWidth, int frameHeight, float gunScale, float muzzleOffsetX, float muzzleOffsetY,
-		boolean reverseStitchOrder, ReloadMilestone[] milestones) {
+			long fireDelayMs, long reloadMs, boolean isAutomatic, float recoilForce, int pellets,
+			String idleTexturePath, String shootTexturePath, String reloadTexturePath, String bulletTexturePath,
+			String shootSoundPath, int frameWidth, int frameHeight, float gunScale, float muzzleOffsetX, float muzzleOffsetY,
+			boolean reverseStitchOrder, ReloadMilestone[] milestones) {
 		this.displayName = name;
 		this.maxAmmo = maxAmmo;
 		this.damage = damage;

@@ -11,7 +11,6 @@ import com.github.glutton.weapons.WeaponProfile;
 import com.github.glutton.weapons.BulletManager;
 import com.github.glutton.weapons.WeaponState;
 import com.github.glutton.world.LevelCollision;
-import com.github.glutton.player.PlayerGunRenderer;
 
 public class PlayerController {
 
@@ -24,6 +23,9 @@ public class PlayerController {
 		this.camera = camera;
 		this.bulletManager = bulletManager;
 		this.gunRenderer = gunRenderer;
+		
+		// Lock and hide hardware cursor for seamless relative 360 aiming
+		Gdx.input.setCursorCatched(true);
 	}
 
 	public void update(PlayerState player, float delta, LevelCollision collision) {
@@ -63,9 +65,6 @@ public class PlayerController {
 			isMoving = true;
 		}
 
-		player.movementState = !isMoving ? PlayerState.MovementState.IDLE
-			: (isRunning ? PlayerState.MovementState.RUN : PlayerState.MovementState.WALK);
-
 		Rectangle horizontalRect = new Rectangle(nextX - halfWidth, player.y - halfHeight, player.width, player.height);
 		if (horizontalRect.overlaps(wall)) {
 			if (nextX > player.x) {
@@ -80,14 +79,23 @@ public class PlayerController {
 			if (player.isGrounded) {
 				player.velocityY = player.jumpStrength;
 				player.isGrounded = false;
+				player.jumpStartY = player.y;
+				player.peakY = player.y;
 			} else if (player.canDoubleJump) {
 				player.velocityY = player.jumpStrength;
 				player.canDoubleJump = false;
+				player.jumpStartY = player.y;
+				player.peakY = player.y;
 			}
 		}
 
 		player.velocityY += player.gravity * delta;
 		player.y += player.velocityY * delta;
+
+		// Track peak jump height
+		if (!player.isGrounded && player.y > player.peakY) {
+			player.peakY = player.y;
+		}
 
 		boolean xOverlapsWall = (player.x + halfWidth > wall.x) && (player.x - halfWidth < wall.x + wall.width);
 		float effectiveGroundTop = xOverlapsWall ? (wall.y + wall.height) : collision.floorTop;
@@ -103,16 +111,49 @@ public class PlayerController {
 		if (player.isGrounded) {
 			player.canDoubleJump = true;
 		}
+
+		// Determine movement state prioritizing airborne JUMP / FALL over ground states
+		if (!player.isGrounded) {
+			if (player.velocityY > 0f) {
+				player.movementState = PlayerState.MovementState.JUMP;
+			} else {
+				player.movementState = PlayerState.MovementState.FALL;
+			}
+		} else {
+			player.movementState = !isMoving ? PlayerState.MovementState.IDLE
+				: (isRunning ? PlayerState.MovementState.RUN : PlayerState.MovementState.WALK);
+		}
 	}
 
 	private void handleAiming(PlayerState player) {
-		mouseWorldPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-		camera.unproject(mouseWorldPos);
+		float pivotX = player.getGunPivotWorldX();
+		float pivotY = player.getGunPivotWorldY();
+		WeaponState ws = player.weaponState;
 
-		player.facingRight = mouseWorldPos.x >= player.x;
+		float deltaX = Gdx.input.getDeltaX();
+		float deltaY = -Gdx.input.getDeltaY();
+
+		if (deltaX != 0f || deltaY != 0f) {
+			float sensitivity = 0.75f;
+			ws.aimOffsetX += deltaX * sensitivity;
+			ws.aimOffsetY += deltaY * sensitivity;
+
+			float currentDist = (float) Math.hypot(ws.aimOffsetX, ws.aimOffsetY);
+			if (currentDist > ws.aimRadius) {
+				ws.aimOffsetX = (ws.aimOffsetX / currentDist) * ws.aimRadius;
+				ws.aimOffsetY = (ws.aimOffsetY / currentDist) * ws.aimRadius;
+			}
+		}
+
+		float targetWorldX = pivotX + ws.aimOffsetX;
+		float targetWorldY = pivotY + ws.aimOffsetY;
+
+		player.facingRight = targetWorldX >= pivotX;
 
 		Vector2 muzzlePos = gunRenderer.getMuzzleWorldPos(player);
-		player.weaponState.aimAngleRad = (float) Math.atan2(mouseWorldPos.y - muzzlePos.y, mouseWorldPos.x - muzzlePos.x);
+		ws.aimAngleRad = (float) Math.atan2(targetWorldY - muzzlePos.y, targetWorldX - muzzlePos.x);
+
+		mouseWorldPos.set(targetWorldX, targetWorldY, 0);
 	}
 
 	public void startReload(WeaponState ws) {
@@ -169,26 +210,35 @@ public class PlayerController {
 
 		if (isShooting && !ws.isReloading && ws.currentAmmo > 0
 			&& TimeUtils.timeSinceMillis(ws.lastFireTime) >= weapon.fireDelayMs) {
+
 			ws.currentAmmo--;
 			ws.lastFireTime = TimeUtils.millis();
 
 			gunRenderer.playShootSound(weapon);
 
-			ws.preFireX = player.x;
-			ws.preFireY = player.y;
-			ws.preFireTimestamp = TimeUtils.millis();
-
-			float recoilAngle = ws.aimAngleRad + (float) Math.PI;
-			ws.recoilVecX = (float) Math.cos(recoilAngle) * weapon.recoilForce;
-			ws.recoilVecY = (float) Math.sin(recoilAngle) * weapon.recoilForce;
-			ws.recoilTimestamp = TimeUtils.millis();
-
+			// 1. Spawn bullet at exact pre-recoil aim angle
 			Vector2 muzzlePos = gunRenderer.getMuzzleWorldPos(player);
 			for (int i = 0; i < weapon.pellets; i++) {
 				float spreadRad = (float) Math.toRadians((Math.random() - 0.5) * 2.0 * weapon.spreadDegrees);
 				float shotAngle = ws.aimAngleRad + spreadRad;
 				bulletManager.spawn(muzzlePos.x, muzzlePos.y, shotAngle, weapon.bulletSpeed, weapon.damage, weapon);
 			}
+
+			// 2. Apply vertical recoil push upward to the virtual aim Y offset
+			ws.aimOffsetY += weapon.recoilForce * 2.5f;
+
+			float currentDist = (float) Math.hypot(ws.aimOffsetX, ws.aimOffsetY);
+			if (currentDist > ws.aimRadius) {
+				ws.aimOffsetX = (ws.aimOffsetX / currentDist) * ws.aimRadius;
+				ws.aimOffsetY = (ws.aimOffsetY / currentDist) * ws.aimRadius;
+			}
+
+			// Update aim angle immediately after recoil kick
+			float pivotX = player.getGunPivotWorldX();
+			float pivotY = player.getGunPivotWorldY();
+			float targetWorldX = pivotX + ws.aimOffsetX;
+			float targetWorldY = pivotY + ws.aimOffsetY;
+			ws.aimAngleRad = (float) Math.atan2(targetWorldY - muzzlePos.y, targetWorldX - muzzlePos.x);
 
 			if (ws.currentAmmo <= 0) {
 				startReload(ws);

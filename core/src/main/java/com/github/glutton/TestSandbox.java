@@ -8,113 +8,96 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.github.glutton.entities.TargetDummy;
 
 public class TestSandbox extends ApplicationAdapter {
 
-    private OrthographicCamera camera;
-    private ShapeRenderer shapeRenderer;
-    
-    // Primitive hitboxes for standalone sandbox testing
-    private Rectangle player;
-    private Rectangle targetDummy;
-    private Rectangle floor;
+	private OrthographicCamera camera;
+	private ShapeRenderer shapeRenderer;
+	
+	private Rectangle player;
+	private TargetDummy targetDummy;
+	private Rectangle floor;
 
-    // Dummy state tracking
-    private int dummyHealth = 100;
-    private boolean isDummyDestroyed = false;
+	private float velocityY = 0;
+	private final float gravity = -1000f;
+	private final float jumpVelocity = 450f;
+	private final float moveSpeed = 250f;
+	private boolean isGrounded = false;
 
-    // Sandbox Physics Variables
-    private float velocityY = 0;
-    private final float gravity = -1000f;
-    private final float jumpVelocity = 450f;
-    private final float moveSpeed = 250f;
-    private boolean isGrounded = false;
+	@Override
+	public void create() {
+		camera = new OrthographicCamera();
+		camera.setToOrtho(false, 800, 600);
+		shapeRenderer = new ShapeRenderer();
 
-    @Override
-    public void create() {
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, 800, 600);
-        shapeRenderer = new ShapeRenderer();
+		player = new Rectangle(100, 150, 24, 48);
+		floor = new Rectangle(50, 50, 700, 20);
 
-        // Spawn player hitbox (width: 24, height: 48)
-        player = new Rectangle(100, 150, 24, 48);
+		// Spawn dummy directly on top of the floor (floor.y + floor.height)
+		targetDummy = new TargetDummy(player.x + 150f, floor.y + floor.height);
+	}
 
-        // Spawn dummy hitbox
-        targetDummy = new Rectangle(500, 70, 32, 64);
+	@Override
+	public void render() {
+		float delta = Gdx.graphics.getDeltaTime();
 
-        // Ground floor platform
-        floor = new Rectangle(50, 50, 700, 20);
-    }
+		float nextX = player.x;
+		if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+			nextX -= moveSpeed * delta;
+		}
+		if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+			nextX += moveSpeed * delta;
+		}
 
-    @Override
-    public void render() {
-        float delta = Gdx.graphics.getDeltaTime();
+		if ((Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.W)) && isGrounded) {
+			velocityY = jumpVelocity;
+			isGrounded = false;
+		}
 
-        // --- HORIZONTAL MOVEMENT ---
-        float nextX = player.x;
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            nextX -= moveSpeed * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            nextX += moveSpeed * delta;
-        }
+		velocityY += gravity * delta;
+		float nextY = player.y + velocityY * delta;
 
-        // --- JUMPING & GRAVITY ---
-        if ((Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.W)) && isGrounded) {
-            velocityY = jumpVelocity;
-            isGrounded = false;
-        }
+		player.setPosition(nextX, nextY);
 
-        velocityY += gravity * delta;
-        float nextY = player.y + velocityY * delta;
+		if (player.overlaps(floor)) {
+			player.setPosition(nextX, floor.y + floor.height);
+			velocityY = 0;
+			isGrounded = true;
+		}
 
-        // Apply new position
-        player.setPosition(nextX, nextY);
+		// --- DUMMY HIT TEST (Press 'F' to attack) ---
+		if (Gdx.input.isKeyJustPressed(Input.Keys.F) && !targetDummy.isDestroyed()) {
+			if (player.overlaps(targetDummy.bounds)) {
+				targetDummy.takeDamage(10);
+			}
+		}
 
-        // --- SIMPLE FLOOR COLLISION ---
-        if (player.overlaps(floor)) {
-            player.setPosition(nextX, floor.y + floor.height);
-            velocityY = 0;
-            isGrounded = true;
-        }
+		ScreenUtils.clear(0.12f, 0.12f, 0.15f, 1f);
 
-        // --- DUMMY HIT TEST (Press 'F' to attack) ---
-        if (Gdx.input.isKeyJustPressed(Input.Keys.F) && !isDummyDestroyed) {
-            if (player.overlaps(targetDummy)) {
-                dummyHealth -= 10;
-                if (dummyHealth <= 0) {
-                    isDummyDestroyed = true;
-                }
-            }
-        }
+		camera.update();
+		shapeRenderer.setProjectionMatrix(camera.combined);
 
-        // --- RENDER SCREEN ---
-        ScreenUtils.clear(0.12f, 0.12f, 0.15f, 1f);
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        camera.update();
-        shapeRenderer.setProjectionMatrix(camera.combined);
+		// Draw Floor
+		shapeRenderer.setColor(Color.DARK_GRAY);
+		shapeRenderer.rect(floor.x, floor.y, floor.width, floor.height);
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		// Draw Player (Cyan Box)
+		shapeRenderer.setColor(Color.CYAN);
+		shapeRenderer.rect(player.x, player.y, player.width, player.height);
 
-        // Draw Floor
-        shapeRenderer.setColor(Color.DARK_GRAY);
-        shapeRenderer.rect(floor.x, floor.y, floor.width, floor.height);
+		// Draw Target Dummy and its health bar using its built-in render method
+		if (!targetDummy.isDestroyed()) {
+			targetDummy.render(shapeRenderer);
+		}
 
-        // Draw Player (Cyan Box)
-        shapeRenderer.setColor(Color.CYAN);
-        shapeRenderer.rect(player.x, player.y, player.width, player.height);
+		shapeRenderer.end();
+	}
 
-        // Draw Target Dummy (Red Box)
-        if (!isDummyDestroyed) {
-            shapeRenderer.setColor(Color.RED);
-            shapeRenderer.rect(targetDummy.x, targetDummy.y, targetDummy.width, targetDummy.height);
-        }
-
-        shapeRenderer.end();
-    }
-
-    @Override
-    public void dispose() {
-        shapeRenderer.dispose();
-    }
+	@Override
+	public void dispose() {
+		shapeRenderer.dispose();
+	}
 }

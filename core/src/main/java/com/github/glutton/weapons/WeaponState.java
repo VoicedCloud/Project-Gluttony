@@ -9,13 +9,8 @@ public class WeaponState {
 	public long lastFireTime = 0;
 	public float aimAngleRad = 0f;
 
-	public float preFireX = 0f, preFireY = 0f;
-	public long preFireTimestamp = 0;
-	public float recoilVecX = 0f, recoilVecY = 0f;
-	public long recoilTimestamp = 0;
-
-	public boolean playedSlideLock = false;
-	public boolean playedReload1 = false;
-	public boolean playedReload2 = false;
-	public boolean playedSlideRelease = false;
+	// Virtual joystick / orbital aim offset relative to the gun pivot
+	public float aimOffsetX = 50f;
+	public float aimOffsetY = 0f;
+	public final float aimRadius = 70f;
 }
