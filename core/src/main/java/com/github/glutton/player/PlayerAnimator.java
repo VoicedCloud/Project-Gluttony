@@ -35,7 +35,7 @@ public class PlayerAnimator {
         runAnimation = buildAnimation(runTexture, 1f / 10f);
 
         // Load 4-frame 512x128 jump and fall sheets (128x128 per frame)
-        jumpTexture = new Texture(Gdx.files.internal("sprites/player/JumpW.png"));
+        jumpTexture = new Texture(Gdx.files.internal("sprites/player/Jump.png"));
         jumpFrames = TextureRegion.split(jumpTexture, 128, 128)[0];
 
         fallTexture = new Texture(Gdx.files.internal("sprites/player/Fall.png"));
