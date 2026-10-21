@@ -13,164 +13,229 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import com.badlogic.gdx.math.Rectangle;
 
 public class BulletManager {
 
-    public static class Impact {
+	public static class Impact {
 
-        public final float x, y;
-        public final int damage;
-        public float age = 0f;
+		public final float x, y;
+		public final int damage;
+		public float age = 0f;
 
-        public Impact(float x, float y, int damage) {
-            this.x = x;
-            this.y = y;
-            this.damage = damage;
-        }
-    }
+		public Impact(float x, float y, int damage) {
+			this.x = x;
+			this.y = y;
+			this.damage = damage;
+		}
+	}
 
-    private final List<Bullet> bullets = new ArrayList<>();
-    private final ImpactManager impactManager;
+	private final List<Bullet> bullets = new ArrayList<>();
+	private final ImpactManager impactManager;
 
-    private final Map<WeaponProfile, Texture> bulletTextures = new EnumMap<>(WeaponProfile.class);
-    private final Map<WeaponProfile, TextureRegion> bulletRegions = new EnumMap<>(WeaponProfile.class);
+	private final Map<WeaponProfile, Texture> bulletTextures = new EnumMap<>(WeaponProfile.class);
+	private final Map<WeaponProfile, TextureRegion> bulletRegions = new EnumMap<>(WeaponProfile.class);
 
-    private static final float DEFAULT_LIFESPAN = 1.5f;
-    private static final float BULLET_RADIUS = 1.5f;
+	private static final float DEFAULT_LIFESPAN = 1.5f;
+	private static final float BULLET_RADIUS = 1.5f;
 
-    public BulletManager(String defaultTexturePath, ImpactManager impactManager) {
-        this.impactManager = impactManager;
-        for (WeaponProfile wp : WeaponProfile.values()) {
-            String path = wp.bulletTexturePath;
-            if (!Gdx.files.internal(path).exists()) {
-                path = defaultTexturePath;
-            }
-            Texture tex = new Texture(Gdx.files.internal(path));
-            bulletTextures.put(wp, tex);
-            bulletRegions.put(wp, new TextureRegion(tex));
-        }
-    }
+	public BulletManager(String defaultTexturePath, ImpactManager impactManager) {
+		this.impactManager = impactManager;
+		for (WeaponProfile wp : WeaponProfile.values()) {
+			String path = wp.bulletTexturePath;
+			if (!Gdx.files.internal(path).exists()) {
+				path = defaultTexturePath;
+			}
+			Texture tex = new Texture(Gdx.files.internal(path));
+			bulletTextures.put(wp, tex);
+			bulletRegions.put(wp, new TextureRegion(tex));
+		}
+	}
 
-    public void spawn(float x, float y, float angleRad, float speed, int damage, WeaponProfile weapon) {
-        float vx = (float) Math.cos(angleRad) * speed;
-        float vy = (float) Math.sin(angleRad) * speed;
-        bullets.add(new Bullet(x, y, vx, vy, damage, DEFAULT_LIFESPAN, weapon));
-    }
+	public void spawn(float x, float y, float angleRad, float speed, int damage, WeaponProfile weapon) {
+		float vx = (float) Math.cos(angleRad) * speed;
+		float vy = (float) Math.sin(angleRad) * speed;
+		bullets.add(new Bullet(x, y, vx, vy, damage, DEFAULT_LIFESPAN, weapon));
+	}
 
-    public void update(float delta, List<com.github.glutton.entities.Enemy> enemies) {
-        Iterator<Bullet> it = bullets.iterator();
-        while (it.hasNext()) {
-            Bullet b = it.next();
+	public static boolean intersectSegmentRectangle(float x1, float y1, float x2, float y2,
+		Rectangle rect, Vector2 outPoint) {
+		float dx = x2 - x1, dy = y2 - y1;
+		float tmin = 0f, tmax = 1f;
 
-            // --- GHOST / PREDICTIVE RAY TRACE ---
-            float nextX = b.x + b.vx * delta;
-            float nextY = b.y + b.vy * delta;
+		if (dx != 0) {
+			float tx1 = (rect.x - x1) / dx;
+			float tx2 = (rect.x + rect.width - x1) / dx;
+			if (tx1 > tx2) {
+				float tmp = tx1;
+				tx1 = tx2;
+				tx2 = tmp;
+			}
+			tmin = Math.max(tmin, tx1);
+			tmax = Math.min(tmax, tx2);
+		} else if (x1 < rect.x || x1 > rect.x + rect.width) {
+			return false;
+		}
 
-            boolean collided = false;
-            if (enemies != null) {
-                for (com.github.glutton.entities.Enemy enemy : enemies) {
-                    if (!enemy.isDestroyed()) {
-                        // Check if the ray segment from current position to next position intersects enemy bounds
-                        if (enemy.bounds.contains(nextX, nextY)
-                                || com.badlogic.gdx.math.Intersector.intersectSegmentRectangle(
-                                        new Vector2(b.x, b.y),
-                                        new Vector2(nextX, nextY),
-                                        enemy.bounds
-                                )) {
+		if (dy != 0) {
+			float ty1 = (rect.y - y1) / dy;
+			float ty2 = (rect.y + rect.height - y1) / dy;
+			if (ty1 > ty2) {
+				float tmp = ty1;
+				ty1 = ty2;
+				ty2 = tmp;
+			}
+			tmin = Math.max(tmin, ty1);
+			tmax = Math.min(tmax, ty2);
+		} else if (y1 < rect.y || y1 > rect.y + rect.height) {
+			return false;
+		}
 
-                            enemy.takeDamage(b.damage);
-                            impactManager.addImpact(nextX, nextY, b.damage);
-                            collided = true;
-                            break;
-                        }
-                    }
-                }
-            }
+		if (tmin > tmax) {
+			return false;
+		}
 
-            if (collided) {
-                it.remove();
-                continue;
-            }
+		outPoint.set(x1 + dx * tmin, y1 + dy * tmin); // earliest (entry) contact point
+		return true;
+	}
 
-            // Normal movement update if no collision
-            b.x = nextX;
-            b.y = nextY;
-            b.lifeRemaining -= delta;
-            b.updateTrail(delta);
+	public void update(float delta, List<com.github.glutton.entities.Enemy> enemies) {
+		Iterator<Bullet> it = bullets.iterator();
+		while (it.hasNext()) {
+			Bullet b = it.next();
 
-            if (b.lifeRemaining <= 0f) {
-                impactManager.addImpact(b.x, b.y, b.damage);
-                it.remove();
-            }
-        }
-        impactManager.update(delta);
-    }
+			if (b.hasCollided) {
+				b.fadeTimer -= delta;
+				if (b.fadeTimer <= 0f) {
+					it.remove();
+				}
+				continue;
+			}
 
-    public void drawTrails(ShapeRenderer shapeRenderer, Matrix4 projectionMatrix) {
-        shapeRenderer.setProjectionMatrix(projectionMatrix);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+			float nextX = b.x + b.vx * delta;
+			float nextY = b.y + b.vy * delta;
 
-        for (Bullet b : bullets) {
-            for (int i = 0; i < b.trail.size - 1; i++) {
-                Vector2 p1 = b.trail.get(i);
-                Vector2 p2 = b.trail.get(i + 1);
+			boolean collided = false;
+			float hitX = nextX;
+			float hitY = nextY;
+			Vector2 contact = new Vector2();
 
-                float alpha1 = 1f - ((float) i / b.trail.size);
-                float alpha2 = 1f - ((float) (i + 1) / b.trail.size);
-                float avgAlpha = (alpha1 + alpha2) / 2f;
+			if (enemies != null) {
+				float closestDistSq = Float.MAX_VALUE;
+				for (com.github.glutton.entities.Enemy enemy : enemies) {
+					if (enemy.isDestroyed()) {
+						continue;
+					}
 
-                shapeRenderer.setColor(1f, 1f, 0.8f, avgAlpha * 0.7f);
-                shapeRenderer.line(p1.x, p1.y, p2.x, p2.y);
-            }
-        }
+					if (intersectSegmentRectangle(b.x, b.y, nextX, nextY, enemy.bounds, contact)) {
+						float distSq = (contact.x - b.x) * (contact.x - b.x) + (contact.y - b.y) * (contact.y - b.y);
+						if (distSq < closestDistSq) {
+							closestDistSq = distSq;
+							hitX = contact.x;
+							hitY = contact.y;
+							collided = true;
+							enemy.takeDamage(b.damage);
+						}
+					}
+				}
+			}
 
-        shapeRenderer.end();
-    }
+			if (collided) {
+				b.x = hitX;
+				b.y = hitY;
+				b.trail.insert(0, new Vector2(hitX, hitY)); // extend trail to the true contact point
+				if (b.trail.size > 5) {
+					b.trail.truncate(5);
+				}
 
-    public void draw(SpriteBatch batch) {
-        for (Bullet b : bullets) {
-            TextureRegion region = bulletRegions.get(b.weapon);
-            if (region == null) {
-                region = bulletRegions.get(WeaponProfile.PISTOL);
-            }
-            float angleDeg = (float) Math.toDegrees(Math.atan2(b.vy, b.vx));
-            float width = region.getRegionWidth() * 0.15f;
-            float height = region.getRegionHeight() * 0.15f;
+				impactManager.addImpact(hitX, hitY, b.damage);
 
-            batch.draw(region,
-                    b.x - width / 2f, b.y - height / 2f,
-                    width / 2f, height / 2f,
-                    width, height,
-                    1f, 1f,
-                    angleDeg);
-        }
-    }
+				b.hasCollided = true;
+				b.vx = 0;
+				b.vy = 0;
+				continue;
+			}
 
-    public List<Bullet> getBullets() {
-        return Collections.unmodifiableList(bullets);
-    }
+			b.x = nextX;
+			b.y = nextY;
+			b.lifeRemaining -= delta;
+			b.updateTrail(delta);
 
-    public List<ImpactManager.Impact> getRecentImpacts() {
-        return impactManager.getRecentImpacts();
-    }
+			if (b.lifeRemaining <= 0f) {
+				impactManager.addImpact(b.x, b.y, b.damage);
+				it.remove();
+			}
+		}
+		impactManager.update(delta);
+	}
 
-    public float getBulletRadius() {
-        return BULLET_RADIUS;
-    }
+	public void drawTrails(ShapeRenderer shapeRenderer, Matrix4 projectionMatrix) {
+		shapeRenderer.setProjectionMatrix(projectionMatrix);
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
-    public int getActiveCount() {
-        return bullets.size();
-    }
+		for (Bullet b : bullets) {
+			float fadeProgress = b.hasCollided ? Math.max(0f, b.fadeTimer / 0.15f) : 1f;
 
-    public void dispose() {
-        for (Texture tex : bulletTextures.values()) {
-            if (tex != null) {
-                tex.dispose();
-            }
-        }
-    }
+			for (int i = 0; i < b.trail.size - 1; i++) {
+				Vector2 p1 = b.trail.get(i);
+				Vector2 p2 = b.trail.get(i + 1);
 
-    public void removeBullet(Bullet bullet) {
-        bullets.remove(bullet);
-    }
+				float alpha1 = 1f - ((float) i / b.trail.size);
+				float alpha2 = 1f - ((float) (i + 1) / b.trail.size);
+				float avgAlpha = (alpha1 + alpha2) / 2f * fadeProgress;
+
+				shapeRenderer.setColor(1f, 1f, 0.8f, avgAlpha * 0.7f);
+				shapeRenderer.line(p1.x, p1.y, p2.x, p2.y);
+			}
+		}
+
+		shapeRenderer.end();
+	}
+
+	public void draw(SpriteBatch batch) {
+		for (Bullet b : bullets) {
+			TextureRegion region = bulletRegions.get(b.weapon);
+			if (region == null) {
+				region = bulletRegions.get(WeaponProfile.PISTOL);
+			}
+			float angleDeg = (float) Math.toDegrees(Math.atan2(b.vy, b.vx));
+			float width = region.getRegionWidth() * 0.15f;
+			float height = region.getRegionHeight() * 0.15f;
+
+			batch.draw(region,
+				b.x - width / 2f, b.y - height / 2f,
+				width / 2f, height / 2f,
+				width, height,
+				1f, 1f,
+				angleDeg);
+		}
+	}
+
+	public List<Bullet> getBullets() {
+		return Collections.unmodifiableList(bullets);
+	}
+
+	public List<ImpactManager.Impact> getRecentImpacts() {
+		return impactManager.getRecentImpacts();
+	}
+
+	public float getBulletRadius() {
+		return BULLET_RADIUS;
+	}
+
+	public int getActiveCount() {
+		return bullets.size();
+	}
+
+	public void dispose() {
+		for (Texture tex : bulletTextures.values()) {
+			if (tex != null) {
+				tex.dispose();
+			}
+		}
+	}
+
+	public void removeBullet(Bullet bullet) {
+		bullets.remove(bullet);
+	}
 }

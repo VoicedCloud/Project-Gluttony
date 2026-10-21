@@ -15,6 +15,9 @@ public class Bullet {
 	public final Array<Vector2> trail = new Array<>();
 	private static final int MAX_TRAIL_POINTS = 5;
 
+	public boolean hasCollided = false;
+	public float fadeTimer = 0.15f; // Linger duration in seconds after impact
+
 	public Bullet(float x, float y, float vx, float vy, int damage, float lifeRemaining, WeaponProfile weapon) {
 		this.x = x;
 		this.y = y;
@@ -30,9 +33,11 @@ public class Bullet {
 	}
 
 	public void updateTrail(float delta) {
-		trail.insert(0, new Vector2(x, y));
-		if (trail.size > MAX_TRAIL_POINTS) {
-			trail.truncate(MAX_TRAIL_POINTS);
+		if (!hasCollided) {
+			trail.insert(0, new Vector2(x, y));
+			if (trail.size > MAX_TRAIL_POINTS) {
+				trail.truncate(MAX_TRAIL_POINTS);
+			}
 		}
 	}
 }
