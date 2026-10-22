@@ -8,37 +8,74 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class ParallaxLayer {
 
-    private final Texture texture;
-    private final TextureRegion region;
-    private final float scrollFactor;
-    private final float scale;
+	private final Texture texture;
+	private final TextureRegion region;
+	private final float scrollFactorX;
+	private final float scrollFactorY;
+	private final float scale;
+	private final boolean tileVertical;
+	private final float baselineCameraY;
+	private final float baselineBottomY;
 
-    public ParallaxLayer(String path, float scrollFactor, float scale, boolean clampVertical) {
-        this.texture = new Texture(Gdx.files.internal(path));
-        // Repeat horizontally for seamless scrolling, clamp vertically to prevent top/bottom artifact lines
-        this.texture.setWrap(TextureWrap.Repeat, clampVertical ? TextureWrap.ClampToEdge : TextureWrap.Repeat);
-        this.region = new TextureRegion(texture);
-        this.scrollFactor = scrollFactor;
-        this.scale = scale;
-    }
+	public ParallaxLayer(String path, float scrollFactorX, float scrollFactorY, float scale,
+		boolean tileVertical, float baselineCameraY, float baselineBottomY) {
+		this.texture = new Texture(Gdx.files.internal(path));
+		this.texture.setWrap(
+			TextureWrap.Repeat,
+			tileVertical ? TextureWrap.Repeat : TextureWrap.ClampToEdge
+		);
+		this.region = new TextureRegion(texture);
+		this.scrollFactorX = scrollFactorX;
+		this.scrollFactorY = scrollFactorY;
+		this.scale = scale;
+		this.tileVertical = tileVertical;
+		this.baselineCameraY = baselineCameraY;
+		this.baselineBottomY = baselineBottomY;
+	}
 
-    public void draw(SpriteBatch batch, float cameraX, float cameraLeftEdge, float cameraBottomEdge, float viewWidth, float viewHeight) {
-        float scaledWidth = texture.getWidth() * scale;
+	public void draw(SpriteBatch batch, float cameraX, float cameraY,
+		float cameraLeftEdge, float cameraBottomEdge,
+		float viewWidth, float viewHeight) {
 
-        float offsetX = (cameraX * scrollFactor) % scaledWidth;
-        if (offsetX < 0) {
-            offsetX += scaledWidth;
-        }
+		float scaledWidth = texture.getWidth() * scale;
+		float scaledHeight = texture.getHeight() * scale;
 
-        float uMin = offsetX / scaledWidth;
-        float uMax = uMin + (viewWidth / scaledWidth);
+		float offsetX = (cameraX * scrollFactorX) % scaledWidth;
+		if (offsetX < 0) {
+			offsetX += scaledWidth;
+		}
 
-        region.setRegion(uMin, 0f, uMax, 1f);
+		float uMin = offsetX / scaledWidth;
+		float uMax = uMin + (viewWidth / scaledWidth);
 
-        batch.draw(region, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
-    }
+		float vMin, vMax;
+		float drawY, drawHeight;
 
-    public void dispose() {
-        texture.dispose();
-    }
+		if (tileVertical) {
+			float offsetY = (cameraY * scrollFactorY) % scaledHeight;
+			if (offsetY < 0) {
+				offsetY += scaledHeight;
+			}
+
+			vMin = offsetY / scaledHeight;
+			vMax = vMin + (viewHeight / scaledHeight);
+
+			drawY = cameraBottomEdge;
+			drawHeight = viewHeight;
+		} else {
+			vMin = 0f;
+			vMax = 1f;
+
+			float sinkOffset = Math.max(0f, (cameraY - baselineCameraY) * scrollFactorY);
+			drawY = cameraBottomEdge - sinkOffset;
+			drawHeight = scaledHeight;
+		}
+
+		region.setRegion(uMin, vMin, uMax, vMax);
+		batch.draw(region, cameraLeftEdge, drawY, viewWidth, drawHeight);
+	}
+
+	public void dispose() {
+		texture.dispose();
+	}
 }

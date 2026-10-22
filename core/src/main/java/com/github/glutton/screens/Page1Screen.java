@@ -49,7 +49,8 @@ public class Page1Screen implements Screen {
 		camera.zoom = 0.25f;
 		viewport = new FitViewport(1280f, 720f, camera);
 
-		background = new ParallaxBackground();
+		float groundLevelCameraY = 96f; // matches FLOOR_TOP(64) + cameraOffsetY(32) used by PlayerController's camera follow
+		background = new ParallaxBackground(groundLevelCameraY);
 
 		SceneConfiguration config = new SceneConfiguration();
 		sceneLoader = new SceneLoader(config);
@@ -109,7 +110,7 @@ public class Page1Screen implements Screen {
 		// 3. Draw Parallax Background behind everything
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
-		background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
+		background.draw(batch, camera.position.x, camera.position.y, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
 		batch.end();
 
 		// 4. Process HyperLap2D level rendering AFTER background so level art is visible
@@ -147,15 +148,31 @@ public class Page1Screen implements Screen {
 		viewport.update(width, height, true);
 	}
 
-	@Override public void pause() {}
-	@Override public void resume() {}
-	@Override public void hide() {}
+	@Override
+	public void pause() {
+	}
+
+	@Override
+	public void resume() {
+	}
+
+	@Override
+	public void hide() {
+	}
 
 	@Override
 	public void dispose() {
-		if (batch != null) batch.dispose();
-		if (shapeRenderer != null) shapeRenderer.dispose();
-		if (box2dDebugRenderer != null) box2dDebugRenderer.dispose();
-		if (gameplaySession != null) gameplaySession.dispose();
+		if (batch != null) {
+			batch.dispose();
+		}
+		if (shapeRenderer != null) {
+			shapeRenderer.dispose();
+		}
+		if (box2dDebugRenderer != null) {
+			box2dDebugRenderer.dispose();
+		}
+		if (gameplaySession != null) {
+			gameplaySession.dispose();
+		}
 	}
 }
