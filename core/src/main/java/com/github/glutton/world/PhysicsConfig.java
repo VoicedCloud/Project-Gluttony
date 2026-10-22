@@ -29,7 +29,7 @@ public final class PhysicsConfig {
 	public static final float PLAYER_RESTITUTION = 0.0f;
 
 	public static final float PLAYER_SPAWN_X = 60f;
-	public static final float PLAYER_SPAWN_Y = 250f; // spawn high enough to fall onto ground cleanly
+	public static final float PLAYER_SPAWN_Y = 100f; // spawn high enough to fall onto ground cleanly
 
 	// ---- Player movement ----
 	public static final float MOVE_SPEED = 90f;
@@ -37,6 +37,6 @@ public final class PhysicsConfig {
 	public static final float RUN_SPEED = MOVE_SPEED;
 
 	// ---- Jump / fall ----
-	public static final float JUMP_VELOCITY = 300f;   // tune jump height here
+	public static final float JUMP_VELOCITY = 225f;   // tune jump height here
 	public static final float MAX_FALL_SPEED = -800f; // terminal velocity (negative = downward)
 }

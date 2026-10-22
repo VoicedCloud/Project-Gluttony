@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.TimeUtils;
 import com.github.glutton.weapons.BulletManager;
 import com.github.glutton.weapons.WeaponProfile;
 import com.github.glutton.weapons.WeaponState;
+import com.github.glutton.world.GameContactListener;
 import com.github.glutton.world.PhysicsConfig;
 import games.rednblack.editor.renderer.SceneLoader;
 
@@ -36,7 +37,7 @@ public class PlayerController {
 		bodyDef.type = BodyDef.BodyType.DynamicBody;
 		bodyDef.position.set(PhysicsConfig.PLAYER_SPAWN_X, PhysicsConfig.PLAYER_SPAWN_Y);
 		bodyDef.fixedRotation = true;
-		bodyDef.bullet = true; // CCD against tunneling
+		bodyDef.bullet = true;
 		playerBody = world.createBody(bodyDef);
 
 		float halfWidth = (PhysicsConfig.PLAYER_WIDTH_PX * PhysicsConfig.PLAYER_SPRITE_SCALE) / 2f;
@@ -54,12 +55,7 @@ public class PlayerController {
 		shape.dispose();
 
 		PolygonShape footShape = new PolygonShape();
-		footShape.setAsBox(
-			halfWidth * 0.9f,
-			halfHeight * 0.2f,
-			new Vector2(0f, -halfHeight),
-			0f
-		);
+		footShape.setAsBox(halfWidth * 0.9f, halfHeight * 0.2f, new Vector2(0f, -halfHeight), 0f);
 		FixtureDef footDef = new FixtureDef();
 		footDef.shape = footShape;
 		footDef.isSensor = true;
@@ -67,29 +63,19 @@ public class PlayerController {
 		footFixture.setUserData(FOOT_SENSOR_TAG);
 		footShape.dispose();
 
-		// Still flagging: if SceneLoader/HyperLap2D already registers its own
-		// ContactListener somewhere, this call replaces it. Parked for later.
-		world.setContactListener(new ContactListener() {
-			@Override
-			public void beginContact(Contact contact) {
-				if (isFootSensor(contact)) {
-					groundContacts++;
-				}
-			}
+		world.setContactListener(new GameContactListener(this));
+	}
 
-			@Override
-			public void endContact(Contact contact) {
-				if (isFootSensor(contact)) {
-					groundContacts = Math.max(0, groundContacts - 1);
-				}
-			}
+	public void handleBeginContact(Contact contact) {
+		if (isFootSensor(contact)) {
+			groundContacts++;
+		}
+	}
 
-			@Override
-			public void preSolve(Contact contact, Manifold oldManifold) {}
-
-			@Override
-			public void postSolve(Contact contact, ContactImpulse impulse) {}
-		});
+	public void handleEndContact(Contact contact) {
+		if (isFootSensor(contact)) {
+			groundContacts = Math.max(0, groundContacts - 1);
+		}
 	}
 
 	private boolean isFootSensor(Contact contact) {

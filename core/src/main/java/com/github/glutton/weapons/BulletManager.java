@@ -7,6 +7,10 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.physics.box2d.RayCastCallback;
+import com.badlogic.gdx.physics.box2d.World;
+import games.rednblack.editor.renderer.SceneLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -18,7 +22,6 @@ import com.badlogic.gdx.math.Rectangle;
 public class BulletManager {
 
 	public static class Impact {
-
 		public final float x, y;
 		public final int damage;
 		public float age = 0f;
@@ -32,6 +35,7 @@ public class BulletManager {
 
 	private final List<Bullet> bullets = new ArrayList<>();
 	private final ImpactManager impactManager;
+	private final SceneLoader sceneLoader;
 
 	private final Map<WeaponProfile, Texture> bulletTextures = new EnumMap<>(WeaponProfile.class);
 	private final Map<WeaponProfile, TextureRegion> bulletRegions = new EnumMap<>(WeaponProfile.class);
@@ -39,7 +43,8 @@ public class BulletManager {
 	private static final float DEFAULT_LIFESPAN = 1.5f;
 	private static final float BULLET_RADIUS = 1.5f;
 
-	public BulletManager(String defaultTexturePath, ImpactManager impactManager) {
+	public BulletManager(SceneLoader sceneLoader, String defaultTexturePath, ImpactManager impactManager) {
+		this.sceneLoader = sceneLoader;
 		this.impactManager = impactManager;
 		for (WeaponProfile wp : WeaponProfile.values()) {
 			String path = wp.bulletTexturePath;
@@ -95,11 +100,13 @@ public class BulletManager {
 			return false;
 		}
 
-		outPoint.set(x1 + dx * tmin, y1 + dy * tmin); // earliest (entry) contact point
+		outPoint.set(x1 + dx * tmin, y1 + dy * tmin);
 		return true;
 	}
 
 	public void update(float delta, List<com.github.glutton.entities.Enemy> enemies) {
+		World world = (sceneLoader != null) ? sceneLoader.getWorld() : null;
+
 		Iterator<Bullet> it = bullets.iterator();
 		while (it.hasNext()) {
 			Bullet b = it.next();
@@ -118,10 +125,44 @@ public class BulletManager {
 			boolean collided = false;
 			float hitX = nextX;
 			float hitY = nextY;
-			Vector2 contact = new Vector2();
+			com.github.glutton.entities.Enemy hitEnemy = null;
+			float closestDistSq = Float.MAX_VALUE;
 
+			// 1. Box2D Raycast against level obstacles (rocks, walls)
+			if (world != null) {
+				final float[] closestFraction = { 1.0f };
+				final Vector2 rayHitPoint = new Vector2();
+				final boolean[] worldHit = { false };
+
+				world.rayCast(new RayCastCallback() {
+					@Override
+					public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
+						if (fixture.isSensor()) {
+							return -1f; 
+						}
+						if (fraction < closestFraction[0]) {
+							closestFraction[0] = fraction;
+							rayHitPoint.set(point);
+							worldHit[0] = true;
+						}
+						return fraction;
+					}
+				}, new Vector2(b.x, b.y), new Vector2(nextX, nextY));
+
+				if (worldHit[0]) {
+					float distSq = (rayHitPoint.x - b.x) * (rayHitPoint.x - b.x) + (rayHitPoint.y - b.y) * (rayHitPoint.y - b.y);
+					if (distSq < closestDistSq) {
+						closestDistSq = distSq;
+						hitX = rayHitPoint.x;
+						hitY = rayHitPoint.y;
+						collided = true;
+					}
+				}
+			}
+
+			// 2. Check Enemy Rectangle Intersections
 			if (enemies != null) {
-				float closestDistSq = Float.MAX_VALUE;
+				Vector2 contact = new Vector2();
 				for (com.github.glutton.entities.Enemy enemy : enemies) {
 					if (enemy.isDestroyed()) {
 						continue;
@@ -134,7 +175,7 @@ public class BulletManager {
 							hitX = contact.x;
 							hitY = contact.y;
 							collided = true;
-							enemy.takeDamage(b.damage);
+							hitEnemy = enemy;
 						}
 					}
 				}
@@ -143,9 +184,13 @@ public class BulletManager {
 			if (collided) {
 				b.x = hitX;
 				b.y = hitY;
-				b.trail.insert(0, new Vector2(hitX, hitY)); // extend trail to the true contact point
+				b.trail.insert(0, new Vector2(hitX, hitY));
 				if (b.trail.size > 5) {
 					b.trail.truncate(5);
+				}
+
+				if (hitEnemy != null) {
+					hitEnemy.takeDamage(b.damage);
 				}
 
 				impactManager.addImpact(hitX, hitY, b.damage);

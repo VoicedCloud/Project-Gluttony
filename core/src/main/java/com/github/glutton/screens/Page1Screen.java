@@ -90,6 +90,15 @@ public class Page1Screen implements Screen {
 			enemies.add(new TargetDummy(250f, 64f));
 		}
 
+		// 1. Step physics FIRST so body positions are completely fresh
+		if (sceneLoader.getWorld() != null) {
+			float subDelta = delta / PhysicsConfig.PHYSICS_SUBSTEPS;
+			for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
+				sceneLoader.getWorld().step(subDelta, PhysicsConfig.VELOCITY_ITERATIONS, PhysicsConfig.POSITION_ITERATIONS);
+			}
+		}
+
+		// 2. Update gameplay IMMEDIATELY after physics so player reads fresh positions (Zero Delay)
 		gameplaySession.update(delta, enemies);
 
 		float viewWidth = camera.viewportWidth * camera.zoom;
@@ -97,20 +106,17 @@ public class Page1Screen implements Screen {
 		float cameraLeftEdge = camera.position.x - viewWidth / 2f;
 		float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
+		// 3. Draw Parallax Background behind everything
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
 		background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
 		batch.end();
 
-		if (sceneLoader.getWorld() != null) {
-			float subDelta = delta / PhysicsConfig.PHYSICS_SUBSTEPS;
-			for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
-				sceneLoader.getWorld().step(subDelta, PhysicsConfig.VELOCITY_ITERATIONS, PhysicsConfig.POSITION_ITERATIONS);
-			}
-		}
+		// 4. Process HyperLap2D level rendering AFTER background so level art is visible
 		sceneLoader.getEngine().setDelta(delta);
 		sceneLoader.getEngine().process();
 
+		// 5. Render Player, Weapons, Bullets, and Enemies on top
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
 		gameplaySession.render(batch, shapeRenderer);

@@ -24,11 +24,11 @@ public class GameplaySession {
 
     public GameplaySession(OrthographicCamera camera, String gunTexturePath, String bulletTexturePath, SceneLoader sceneLoader) {
         playerState = new PlayerState();
-        playerState.x = 60f;
-        playerState.y = 48f;
+        playerState.x = PhysicsConfig.PLAYER_SPAWN_X;
+        playerState.y = PhysicsConfig.PLAYER_SPAWN_Y;
 
         this.impactManager = new ImpactManager();
-        bulletManager = new BulletManager(bulletTexturePath, impactManager);
+        bulletManager = new BulletManager(sceneLoader, bulletTexturePath, impactManager);
         gunRenderer = new PlayerGunRenderer(gunTexturePath);
         playerController = new PlayerController(camera, bulletManager, gunRenderer, sceneLoader);
         playerAnimator = new PlayerAnimator();
