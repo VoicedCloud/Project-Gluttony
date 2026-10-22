@@ -1,0 +1,17 @@
+Dead.png
+	size: 1024, 256
+Dead
+	index: 0
+	bounds: 1, 1, 128, 128
+Dead
+	index: 1
+	bounds: 131, 1, 128, 128
+Dead
+	index: 2
+	bounds: 261, 1, 128, 128
+Dead
+	index: 3
+	bounds: 391, 1, 128, 128
+Dead
+	index: 4
+	bounds: 521, 1, 128, 128

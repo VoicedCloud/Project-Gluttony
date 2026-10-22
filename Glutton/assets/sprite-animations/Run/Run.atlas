@@ -1,0 +1,32 @@
+Run.png
+	size: 2048, 256
+Run
+	index: 0
+	bounds: 1, 1, 128, 128
+Run
+	index: 1
+	bounds: 131, 1, 128, 128
+Run
+	index: 2
+	bounds: 261, 1, 128, 128
+Run
+	index: 3
+	bounds: 391, 1, 128, 128
+Run
+	index: 4
+	bounds: 521, 1, 128, 128
+Run
+	index: 5
+	bounds: 651, 1, 128, 128
+Run
+	index: 6
+	bounds: 781, 1, 128, 128
+Run
+	index: 7
+	bounds: 911, 1, 128, 128
+Run
+	index: 8
+	bounds: 1041, 1, 128, 128
+Run
+	index: 9
+	bounds: 1171, 1, 128, 128
