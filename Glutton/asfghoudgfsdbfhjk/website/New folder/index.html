@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GLUTTONY - Login Menu</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- Font weights for gaming UI theme -->
+    <link href="https://googleapis.com" rel="stylesheet" />
+    <style>
+      /* Custom tweaks to accommodate form inputs inside the gaming box layout */
+      .form-input-group {
+        margin-bottom: 12px;
+      }
+      .form-input-group input {
+        width: 100%;
+        height: 46px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 15px;
+        padding: 0 15px;
+        letter-spacing: 1px;
+        transition: border-color 0.2s;
+      }
+      .form-input-group input:focus {
+        border-color: #ffcc00;
+        outline: none;
+      }
+      .status-msg {
+        font-size: 12px;
+        text-align: center;
+        margin-top: 10px;
+        font-family: "Orbitron";
+        letter-spacing: 1px;
+      }
+      .hidden-form {
+        display: none;
+      }
+      .back-link {
+        color: #888;
+        font-size: 11px;
+        text-transform: uppercase;
+        text-align: center;
+        margin-top: 14px;
+        cursor: pointer;
+        letter-spacing: 1px;
+        font-family: "Orbitron";
+      }
+      .back-link:hover {
+        color: #ffcc00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-wrap">
+      <div class="bg-image"></div>
+      <div class="bg-overlay"></div>
+      <div class="bg-vignette"></div>
+    </div>
+
+    <!-- MAIN SCREEN -->
+    <div class="screen active" id="authScreen">
+      <div class="top-bar">
+        <div class="logo">GLUTTONY<span>:HUNGER</span></div>
+        <div>VER. 1.0.0</div>
+      </div>
+
+      <div class="login-box">
+        <!-- 1. Default Main Menu View -->
+        <div id="menuView">
+          <div class="login-title">SELECT LOGIN METHOD</div>
+          <div class="divider"></div>
+          <div class="btn-group">
+            <button class="codm-btn" id="guestBtn">👤 GUEST</button>
+            <button class="codm-btn" id="showSignUp">SIGN UP</button>
+            <button class="codm-btn" id="showSignIn">LOG IN</button>
+          </div>
+        </div>
+
+        <!-- 2. Account Creation View with Double Password fields -->
+        <div id="signUpView" class="hidden-form">
+          <div class="login-title">CREATE ACCOUNT</div>
+          <div class="divider"></div>
+          <form id="signUpForm" class="btn-group">
+            <div class="form-input-group">
+              <input
+                type="text"
+                id="regUser"
+                placeholder="ENTER USERNAME"
+                required
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-input-group">
+              <input
+                type="password"
+                id="regPass"
+                placeholder="ENTER PASSWORD"
+                required
+              />
+            </div>
+            <!-- Second Password field -->
+            <div class="form-input-group">
+              <input
+                type="password"
+                id="regPassConfirm"
+                placeholder="CONFIRM PASSWORD"
+                required
+              />
+            </div>
+            <button type="submit" class="codm-btn yellow-btn">
+              REGISTER ACCOUNT
+            </button>
+          </form>
+          <div class="back-link" id="backFromRegister">✕ CANCEL</div>
+          <div class="status-msg" id="signUpMsg"></div>
+        </div>
+
+        <!-- 3. Account Sign In View -->
+        <div id="signInView" class="hidden-form">
+          <div class="login-title">ACCOUNT SIGN IN</div>
+          <div class="divider"></div>
+          <form id="signInForm" class="btn-group">
+            <div class="form-input-group">
+              <input
+                type="text"
+                id="loginUser"
+                placeholder="USERNAME"
+                required
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-input-group">
+              <input
+                type="password"
+                id="loginPass"
+                placeholder="PASSWORD"
+                required
+              />
+            </div>
+            <button type="submit" class="codm-btn yellow-btn">
+              CONFIRM LOGIN
+            </button>
+          </form>
+          <div class="back-link" id="backFromLogin">✕ CANCEL</div>
+          <div class="status-msg" id="signInMsg"></div>
+        </div>
+
+        <div class="terms">
+          By logging in, you agree to our Terms and Privacy Policy.
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <div>© 2026 GLUTTANOUS - FAN MADE UI DEMO</div>
+        <div>CUSTOMER SUPPORT</div>
+      </div>
+    </div>
+
+    <!-- GAME LOBBY SCREEN (Triggers after successful validation) -->
+    <div class="screen" id="lobbyScreen">
+      <div class="lobby-header">
+        <div class="player-hud">
+          <div class="hud-name" id="displayUsername">PLAYER1</div>
+          <div class="hud-level">Lv. 1 <span>NEW REGISTRATION</span></div>
+        </div>
+        <button class="icon-btn" id="logOutBtn">LOG OUT</button>
+      </div>
+      <div class="lobby-center">
+        <div class="lobby-big">ACCESS GRANTED</div>
+        <div class="lobby-sub">CONNECTED TO USER_DATA DATABASE</div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

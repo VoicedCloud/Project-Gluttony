@@ -1,0 +1,127 @@
+
+GATEWAY.PHP CAVE MAN MANUAL 🍖🔥
+
+This manual show how make gateway.php work. Follow steps exactly. No skip. Or computer explode.
+
+STEP 1: FIND THE SACRED HTDOCS CAVE 🪵
+
+Your computer has secret folder where web stuff lives. You must put file there.
+1. Open your computer file finder (Windows Explorer).
+2. Go to This PC -> Local Disk (C:) -> xampp -> htdocs.
+3. Create new folder inside htdocs. Name it exactly: codm-login
+4. Path must look exactly like this:
+C:\xampp\htdocs\codm-login\
+
+STEP 2: MAKE THE MAGIC SCRIPT FILE 📄✏️
+
+You must make the blank stone slate to write code on.
+1. Open Notepad (or any text editor).
+2. Create New File.
+3. Copy all code from the box below. Paste into file.
+php:
+
+"
+<?php
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+
+$db_host = "localhost";
+$db_name = "user_data"; 
+$db_user = "root";      
+$db_pass = "";          
+
+try {
+    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $ex) {
+    echo json_encode(["status" => "error", "message" => "DATABASE CONNECTION OFFLINE"]);
+    exit;
+}
+
+$raw_input = file_get_contents("php://input");
+$payload = json_decode($raw_input, true);
+
+if (!$payload || !isset($payload['operation'])) {
+    echo json_encode(["status" => "error", "message" => "EMPTY OR MALFORMED OPERATION"]);
+    exit;
+}
+
+$operation = $payload['operation'];
+
+if ($operation === 'register') {
+    $user = trim($payload['username']);
+    $pass = $payload['password'];
+
+    if (empty($user) || empty($pass)) {
+        echo json_encode(["status" => "error", "message" => "FIELDS CANNOT BE BLANK"]);
+        exit;
+    }
+
+    $encrypted_pass = password_hash($pass, PASSWORD_DEFAULT);
+
+    try {
+        $query = $pdo->prepare("INSERT INTO users (username, password, date_registered) VALUES (:username, :password, NOW())");
+        $query->execute([
+            ':username' => $user,
+            ':password' => $encrypted_pass
+        ]);
+        echo json_encode(["status" => "success", "message" => "REGISTRATION COMPLETE! SUCCESS"]);
+    } catch (PDOException $ex) {
+        echo json_encode(["status" => "error", "message" => "USERNAME NOT AVAILABLE"]);
+    }
+}
+
+if ($operation === 'login') {
+    $user = trim($payload['username']);
+    $pass = $payload['password'];
+
+    try {
+        $query = $pdo->prepare("SELECT * FROM users WHERE username = :username");
+        $query->execute([':username' => $user]);
+        $fetched_account = $query->fetch(PDO::FETCH_ASSOC);
+
+        if ($fetched_account && password_verify($pass, $fetched_account['password'])) {
+            echo json_encode(["status" => "success", "message" => "ACCESS GRANTED"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "INVALID ACCOUNT CREDENTIALS"]);
+        }
+    } catch (PDOException $ex) {
+        echo json_encode(["status" => "error", "message" => "CRITICAL VERIFICATION EXCEPTION"]);
+    }
+}
+?>
+
+"
+Use code with caution.
+4. Click File -> Save As.
+5. Look at Save as type box at bottom. Change it from Text Documents (*.txt) to All Files (*.*). VERY IMPORTANT! If skip, file become gateway.php.txt and break!
+6. Name file exactly: gateway.php
+7. Save it inside your C:\xampp\htdocs\codm-login\ folder.
+
+STEP 3: WAKE UP THE FIRE MONSTERS 🔥⚡
+
+Code no work if XAMPP asleep. You must wake it up.
+1. Open XAMPP Control Panel program.
+2. Look at Apache line. Click Start button. Box turn green. 🟢
+3. Look at MySQL line. Click Start button. Box turn green. 🟢
+4. Both must be green. If not green, code dead.
+
+STEP 4: PREPARE THE SACRED DIRT (DATABASE) 🪨⛏️
+
+Your data needs structured dirt boxes to sit in. Your phpMyAdmin must match file exactly.
+1. Open web browser (Chrome/Edge).
+2. Go to address: http://localhost/phpmyadmin/
+3. Left side has list. Look for database name user_data.
+4. Click user_data. Look inside. Must have table named users.
+5. Click users, then click Structure tab at top. Columns must look exactly like this image or gateway cry:
+	• user_id (Number box)
+	• username (Text box)
+	• password (Big text box for hidden text)
+	• date_registered (Time box)
+
+CAVE MAN TROUBLESHOOTING CHEATSHEET 🛑🏹
+
+• Computer say "DATABASE CONNECTION OFFLINE": You forgot Step 3 or Step 4! MySQL fire monster is asleep, or database name is not user_data. Go fix database name in phpMyAdmin!
+• Sign Up button do nothing: Open your script.js file. Make sure JavaScript fetch address is looking for 'gateway.php' and not some other name. Both files must sleep in the exact same codm-login folder cave!
+Now that gateway.php manual is ready, do you want me to write same Cave Man instructions for how to name and link index.html and script.js so the entire loop connects without breaking?

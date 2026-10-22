@@ -1,0 +1,19 @@
+HIGHLIGHTEDcheckexeturn-tile-set.png
+	size: 256, 32
+HIGHLIGHTEDcheckexeturn0
+	bounds: 1, 1, 16, 16
+HIGHLIGHTEDcheckexeturn1
+	bounds: 19, 1, 16, 16
+HIGHLIGHTEDcheckexeturn2
+	bounds: 37, 1, 16, 16
+HIGHLIGHTEDcheckexeturn3
+	bounds: 55, 1, 16, 16
+HIGHLIGHTEDcheckexeturn4
+	bounds: 73, 1, 16, 16
+HIGHLIGHTEDcheckexeturn5
+	bounds: 91, 1, 16, 16
+	split: 0, 0, 0, 0
+HIGHLIGHTEDcheckexeturn6
+	bounds: 109, 1, 16, 16
+HIGHLIGHTEDcheckexeturn7
+	bounds: 127, 1, 16, 16

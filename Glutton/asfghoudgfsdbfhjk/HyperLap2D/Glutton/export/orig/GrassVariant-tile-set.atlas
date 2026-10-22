@@ -1,0 +1,14 @@
+GrassVariant-tile-set.png
+	size: 128, 64
+GrassVariant0
+	bounds: 1, 1, 16, 32
+GrassVariant1
+	bounds: 19, 1, 16, 32
+GrassVariant4
+	bounds: 19, 1, 16, 32
+GrassVariant2
+	bounds: 37, 1, 16, 32
+GrassVariant3
+	bounds: 55, 1, 16, 32
+GrassVariant5
+	bounds: 73, 1, 16, 32

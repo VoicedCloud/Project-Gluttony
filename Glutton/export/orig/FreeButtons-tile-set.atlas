@@ -1,0 +1,100 @@
+FreeButtons-tile-set.png
+	size: 128, 128
+FreeButtons0
+	bounds: 1, 109, 16, 16
+FreeButtons1
+	bounds: 1, 91, 16, 16
+FreeButtons10
+	bounds: 19, 109, 16, 16
+FreeButtons11
+	bounds: 1, 73, 16, 16
+FreeButtons12
+	split: 0, 0, 0, 0
+	bounds: 19, 91, 16, 16
+FreeButtons13
+	bounds: 37, 109, 16, 16
+FreeButtons14
+	bounds: 1, 55, 16, 16
+FreeButtons15
+	bounds: 19, 73, 16, 16
+FreeButtons16
+	bounds: 37, 91, 16, 16
+FreeButtons17
+	bounds: 55, 109, 16, 16
+FreeButtons18
+	bounds: 1, 37, 16, 16
+FreeButtons19
+	bounds: 19, 55, 16, 16
+FreeButtons2
+	bounds: 37, 73, 16, 16
+FreeButtons20
+	bounds: 55, 91, 16, 16
+FreeButtons21
+	bounds: 73, 109, 16, 16
+FreeButtons22
+	bounds: 1, 19, 16, 16
+FreeButtons23
+	bounds: 19, 37, 16, 16
+FreeButtons24
+	bounds: 37, 55, 16, 16
+FreeButtons25
+	bounds: 55, 73, 16, 16
+FreeButtons26
+	bounds: 73, 91, 16, 16
+FreeButtons27
+	bounds: 91, 109, 16, 16
+FreeButtons28
+	bounds: 1, 1, 16, 16
+FreeButtons29
+	bounds: 19, 19, 16, 16
+FreeButtons3
+	bounds: 37, 37, 16, 16
+FreeButtons30
+	bounds: 55, 55, 16, 16
+FreeButtons31
+	bounds: 73, 73, 16, 16
+FreeButtons32
+	bounds: 91, 91, 16, 16
+FreeButtons33
+	bounds: 109, 109, 16, 16
+FreeButtons34
+	split: 3, 3, 6, 5
+	bounds: 19, 1, 16, 16
+FreeButtons35
+	bounds: 37, 19, 16, 16
+FreeButtons36
+	bounds: 55, 37, 16, 16
+FreeButtons37
+	bounds: 73, 55, 16, 16
+FreeButtons38
+	bounds: 91, 73, 16, 16
+FreeButtons39
+	bounds: 109, 91, 16, 16
+FreeButtons4
+	bounds: 37, 1, 16, 16
+FreeButtons40
+	bounds: 55, 19, 16, 16
+FreeButtons41
+	bounds: 73, 37, 16, 16
+FreeButtons42
+	bounds: 91, 55, 16, 16
+FreeButtons43
+	bounds: 109, 73, 16, 16
+FreeButtons44
+	bounds: 55, 1, 16, 16
+FreeButtons45
+	bounds: 73, 19, 16, 16
+FreeButtons46
+	bounds: 91, 37, 16, 16
+FreeButtons47
+	bounds: 109, 55, 16, 16
+FreeButtons5
+	bounds: 73, 1, 16, 16
+FreeButtons6
+	bounds: 91, 19, 16, 16
+FreeButtons7
+	bounds: 109, 37, 16, 16
+FreeButtons8
+	bounds: 91, 1, 16, 16
+FreeButtons9
+	bounds: 109, 19, 16, 16
