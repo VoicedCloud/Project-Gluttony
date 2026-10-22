@@ -1,5 +1,6 @@
 package com.github.glutton.screens;
 
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.Input;
 import com.github.glutton.background.ParallaxBackground;
@@ -9,12 +10,14 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.glutton.GluttonGame;
 import com.github.glutton.entities.Enemy;
 import com.github.glutton.entities.TargetDummy;
 import com.github.glutton.world.GameplaySession;
+import com.github.glutton.world.PhysicsConfig;
 import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
 import java.util.ArrayList;
@@ -22,125 +25,131 @@ import java.util.List;
 
 public class Page1Screen implements Screen {
 
-    private final GluttonGame game;
-    private final List<Enemy> enemies = new ArrayList<>();
-    private SceneLoader sceneLoader;
-    private Viewport viewport;
-    private OrthographicCamera camera;
+	private final GluttonGame game;
+	private final List<Enemy> enemies = new ArrayList<>();
+	private SceneLoader sceneLoader;
+	private Viewport viewport;
+	private OrthographicCamera camera;
 
-    private SpriteBatch batch;
-    private ShapeRenderer shapeRenderer;
-    private ParallaxBackground background;
+	private SpriteBatch batch;
+	private ShapeRenderer shapeRenderer;
+	private Box2DDebugRenderer box2dDebugRenderer;
+	private ParallaxBackground background;
 
-    private boolean debugHitbox = false;
-    private GameplaySession gameplaySession;
+	private boolean debugHitbox = false;
+	private GameplaySession gameplaySession;
 
-    public Page1Screen(GluttonGame game) {
-        this.game = game;
-    }
+	public Page1Screen(GluttonGame game) {
+		this.game = game;
+	}
 
-    @Override
-    public void show() {
-        camera = new OrthographicCamera();
-        camera.zoom = 0.25f;
-        viewport = new FitViewport(1280f, 720f, camera);
+	@Override
+	public void show() {
+		camera = new OrthographicCamera();
+		camera.zoom = 0.25f;
+		viewport = new FitViewport(1280f, 720f, camera);
 
-        background = new ParallaxBackground();
+		background = new ParallaxBackground();
 
-        SceneConfiguration config = new SceneConfiguration();
-        sceneLoader = new SceneLoader(config);
-        sceneLoader.loadScene("Page1", viewport);
+		SceneConfiguration config = new SceneConfiguration();
+		sceneLoader = new SceneLoader(config);
+		sceneLoader.loadScene("Page1", viewport);
 
-        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+		if (sceneLoader.getWorld() != null) {
+			sceneLoader.getWorld().setGravity(new Vector2(0f, PhysicsConfig.GRAVITY_Y));
+		}
 
-        batch = new SpriteBatch();
-        shapeRenderer = new ShapeRenderer();
+		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 
-        gameplaySession = new GameplaySession(
-                camera,
-                "sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
-                "sprites/weapons/01 - Individual sprites/Bullets & Ammo/Glock - P80/Bullet.png"
-        );
+		batch = new SpriteBatch();
+		shapeRenderer = new ShapeRenderer();
+		box2dDebugRenderer = new Box2DDebugRenderer();
 
-        // Spawn initial test dummy
-        enemies.add(new TargetDummy(250f, 64f));
-    }
+		gameplaySession = new GameplaySession(
+			camera,
+			"sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
+			"sprites/weapons/01 - Individual sprites/Bullets & Ammo/Glock - P80/Bullet.png",
+			sceneLoader
+		);
 
-    @Override
-    public void render(float delta) {
-        viewport.apply();
-        Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		enemies.add(new TargetDummy(250f, 64f));
+	}
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
-            debugHitbox = !debugHitbox;
-        }
+	@Override
+	public void render(float delta) {
+		viewport.apply();
+		Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Auto-respawn destroyed enemies
-        enemies.removeIf(Enemy::isDestroyed);
-        if (enemies.isEmpty()) {
-            enemies.add(new TargetDummy(250f, 64f));
-        }
+		if (Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
+			debugHitbox = !debugHitbox;
+		}
 
-        // Update gameplay and pass enemies list for ghost-ray collision handling
-        gameplaySession.update(delta, enemies);
-        // Note: Update your GameplaySession to pass `enemies` into bulletManager.update(delta, enemies)
-        
-        float viewWidth = camera.viewportWidth * camera.zoom;
-        float viewHeight = camera.viewportHeight * camera.zoom;
-        float cameraLeftEdge = camera.position.x - viewWidth / 2f;
-        float cameraBottomEdge = camera.position.y - viewHeight / 2f;
+		enemies.removeIf(Enemy::isDestroyed);
+		if (enemies.isEmpty()) {
+			enemies.add(new TargetDummy(250f, 64f));
+		}
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
-        batch.end();
+		gameplaySession.update(delta, enemies);
 
-        sceneLoader.getEngine().setDelta(delta);
-        sceneLoader.getEngine().process();
+		float viewWidth = camera.viewportWidth * camera.zoom;
+		float viewHeight = camera.viewportHeight * camera.zoom;
+		float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+		float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        gameplaySession.render(batch, shapeRenderer);
-        batch.end();
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		background.draw(batch, camera.position.x, cameraLeftEdge, cameraBottomEdge, viewWidth, viewHeight);
+		batch.end();
 
-        gameplaySession.renderTrails(shapeRenderer, camera.combined);
+		if (sceneLoader.getWorld() != null) {
+			float subDelta = delta / PhysicsConfig.PHYSICS_SUBSTEPS;
+			for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
+				sceneLoader.getWorld().step(subDelta, PhysicsConfig.VELOCITY_ITERATIONS, PhysicsConfig.POSITION_ITERATIONS);
+			}
+		}
+		sceneLoader.getEngine().setDelta(delta);
+		sceneLoader.getEngine().process();
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        gameplaySession.renderMuzzleFlash(shapeRenderer);
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		gameplaySession.render(batch, shapeRenderer);
+		batch.end();
 
-        // Render all active enemies
-        for (Enemy enemy : enemies) {
-            enemy.render(shapeRenderer);
-        }
+		gameplaySession.renderTrails(shapeRenderer, camera.combined);
 
-        shapeRenderer.end();
+		shapeRenderer.setProjectionMatrix(camera.combined);
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		gameplaySession.renderMuzzleFlash(shapeRenderer);
 
-        if (debugHitbox) {
-            shapeRenderer.setProjectionMatrix(camera.combined);
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		for (Enemy enemy : enemies) {
+			enemy.render(shapeRenderer);
+		}
 
-            shapeRenderer.setColor(0, 1, 1, 1);
-            for (Enemy enemy : enemies) {
-                shapeRenderer.rect(enemy.bounds.x, enemy.bounds.y, enemy.bounds.width, enemy.bounds.height);
-            }
+		shapeRenderer.end();
 
-            shapeRenderer.end();
-        }
+		if (debugHitbox) {
+			box2dDebugRenderer.render(sceneLoader.getWorld(), camera.combined);
+		}
 
-        camera.position.set(gameplaySession.getPlayerState().x, gameplaySession.getPlayerState().y + 32f, 0);
-        camera.update();
-    }
+		camera.position.set(gameplaySession.getPlayerState().x, gameplaySession.getPlayerState().y + 32f, 0);
+		camera.update();
+	}
 
-    @Override
-    public void resize(int width, int height) { viewport.update(width, height, true); }
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
-    @Override public void dispose() {
-        if (batch != null) batch.dispose();
-        if (shapeRenderer != null) shapeRenderer.dispose();
-        if (gameplaySession != null) gameplaySession.dispose();
-    }
+	@Override
+	public void resize(int width, int height) {
+		viewport.update(width, height, true);
+	}
+
+	@Override public void pause() {}
+	@Override public void resume() {}
+	@Override public void hide() {}
+
+	@Override
+	public void dispose() {
+		if (batch != null) batch.dispose();
+		if (shapeRenderer != null) shapeRenderer.dispose();
+		if (box2dDebugRenderer != null) box2dDebugRenderer.dispose();
+		if (gameplaySession != null) gameplaySession.dispose();
+	}
 }

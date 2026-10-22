@@ -1,6 +1,7 @@
 package com.github.glutton.player;
 
 import com.github.glutton.weapons.WeaponState;
+import com.github.glutton.world.PhysicsConfig;
 
 public class PlayerState {
 
@@ -12,7 +13,7 @@ public class PlayerState {
 
 	public final WeaponState weaponState = new WeaponState();
 
-	public final float spriteScale = 0.3f;
+	public final float spriteScale = PhysicsConfig.PLAYER_SPRITE_SCALE;
 	public final float gunPivotFrameX = 61f;
 	public final float gunPivotFrameY = 85f;
 
@@ -43,17 +44,14 @@ public class PlayerState {
 	public float peakY = 0f;
 	public float maxJumpHeight = 0f;
 
-	public final float width = 32f * 0.3f;
-	public final float height = 64f * 0.3f;
+	public final float width = PhysicsConfig.PLAYER_WIDTH_PX * spriteScale;
+	public final float height = PhysicsConfig.PLAYER_HEIGHT_PX * spriteScale;
 
-	public final float spriteOffsetX = 48f * 0.3f;
-	public final float spriteOffsetY = 0f * 0.3f;
-	public final float spriteFrameSize = 128f * 0.3f;
+	public final float spriteOffsetX = 48f * spriteScale;
+	public final float spriteOffsetY = 0f * spriteScale;
+	public final float spriteFrameSize = 128f * spriteScale;
 
-	public final float moveSpeed = 90.0f;
-	public final float walkSpeed = moveSpeed / 2f;
-	public final float runSpeed = moveSpeed;
-
-	public final float jumpStrength = 315.0f;
-	public final float gravity = -1200.0f;
+	public final float moveSpeed = PhysicsConfig.MOVE_SPEED;
+	public final float walkSpeed = PhysicsConfig.WALK_SPEED;
+	public final float runSpeed = PhysicsConfig.RUN_SPEED;
 }
