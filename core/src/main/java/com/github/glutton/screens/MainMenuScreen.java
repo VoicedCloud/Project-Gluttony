@@ -4,132 +4,150 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.glutton.GluttonGame;
+import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
-import coms.
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
+import games.rednblack.editor.renderer.components.DimensionsComponent;
+import games.rednblack.editor.renderer.components.TransformComponent;
+import games.rednblack.editor.renderer.utils.ComponentRetriever;
+import games.rednblack.editor.renderer.utils.ItemWrapper;
 
 public class MainMenuScreen implements Screen {
 
-	private final GluttonGame game;
-	private SceneLoader sceneLoader;
-	private Stage stage;
+    private final GluttonGame game;
+    private SceneLoader sceneLoader;
+    private Viewport viewport;
+    private OrthographicCamera camera;
 
-	public MainMenuScreen(GluttonGame game) {
-		this.game = game;
-	}
+    private TransformComponent playTransform;
+    private DimensionsComponent playDimensions;
+    private TransformComponent settingsTransform;
+    private DimensionsComponent settingsDimensions;
+    private TransformComponent exitTransform;
+    private DimensionsComponent exitDimensions;
+    private TransformComponent accountTransform;
+    private DimensionsComponent accountDimensions;
 
-	@Override
-	public void show() {
-		Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+    private final Vector3 mouseVector = new Vector3();
 
-		// Initialize HyperLap2D SceneLoader and load the MainMenu scene
-		sceneLoader = new SceneLoader();
-		com.badlogic.gdx.scenes.scene2d.Group rootGroup = sceneLoader.loadScene("MainMenu");
-		
-		// Create stage using screen viewport and add the HyperLap2D root actor group
-		stage = new Stage(new ScreenViewport());
-		stage.addActor(rootGroup);
-		Gdx.input.setInputProcessor(stage);
+    private boolean isValid(ItemWrapper w) {
+        return w != null && w.getEntity() >= 0;
+    }
 
-		game.playMenuBgm();
+    public MainMenuScreen(GluttonGame game) {
+        this.game = game;
+    }
 
-		// Wire up HyperLap2D UI Buttons by their itemIdentifiers
-		Actor playBtn = rootGroup.findActor("PlayButton");
-		if (playBtn != null) {
-			addHandCursor(playBtn);
-			playBtn.addListener(new ClickListener() {
-				@Override
-				public void clicked(InputEvent event, float x, float y) {
-					Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-					game.setScreen(new LevelSelectScreen(game));
-				}
-			});
-		}
+    @Override
+    public void show() {
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
 
-		Actor settingsBtn = rootGroup.findActor("SettingsButton");
-		if (settingsBtn != null) {
-			addHandCursor(settingsBtn);
-			settingsBtn.addListener(new ClickListener() {
-				@Override
-				public void clicked(InputEvent event, float x, float y) {
-					// TODO: Add Settings menu logic or dialog here
-				}
-			});
-		}
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(1280f, 720f, camera);
 
-		Actor accountBtn = rootGroup.findActor("AccountButton");
-		if (accountBtn != null) {
-			addHandCursor(accountBtn);
-			accountBtn.addListener(new ClickListener() {
-				@Override
-				public void clicked(InputEvent event, float x, float y) {
-					// TODO: Add Account/Login modal popup logic here
-				}
-			});
-		}
+        SceneConfiguration config = new SceneConfiguration();
+        sceneLoader = new SceneLoader(config);
+        sceneLoader.loadScene("MainMenu", viewport);
 
-		Actor exitBtn = rootGroup.findActor("ExitButton");
-		if (exitBtn != null) {
-			addHandCursor(exitBtn);
-			exitBtn.addListener(new ClickListener() {
-				@Override
-				public void clicked(InputEvent event, float x, float y) {
-					Gdx.app.exit();
-				}
-			});
-		}
-	}
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        game.playMenuBgm();
 
-	private void addHandCursor(Actor actor) {
-		actor.addListener(new ClickListener() {
-			@Override
-			public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-				Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Hand);
-			}
+        ItemWrapper root = new ItemWrapper(sceneLoader.getRoot(), sceneLoader.getEngine());
 
-			@Override
-			public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-				Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-			}
-		});
-	}
+        ItemWrapper play = root.getChild("PlayButton");
+        if (isValid(play)) {
+            playTransform = ComponentRetriever.get(play.getEntity(), TransformComponent.class, sceneLoader.getEngine());
+            playDimensions = ComponentRetriever.get(play.getEntity(), DimensionsComponent.class, sceneLoader.getEngine());
+        }
 
-	@Override
-	public void render(float delta) {
-		Gdx.gl.glClearColor(0, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        ItemWrapper settings = root.getChild("SettingsButton");
+        if (isValid(settings)) {
+            settingsTransform = ComponentRetriever.get(settings.getEntity(), TransformComponent.class, sceneLoader.getEngine());
+            settingsDimensions = ComponentRetriever.get(settings.getEntity(), DimensionsComponent.class, sceneLoader.getEngine());
+        }
 
-		stage.act(delta);
-		stage.draw();
-	}
+        ItemWrapper exit = root.getChild("ExitButton");
+        if (isValid(exit)) {
+            exitTransform = ComponentRetriever.get(exit.getEntity(), TransformComponent.class, sceneLoader.getEngine());
+            exitDimensions = ComponentRetriever.get(exit.getEntity(), DimensionsComponent.class, sceneLoader.getEngine());
+        }
 
-	@Override
-	public void resize(int width, int height) {
-		stage.getViewport().update(width, height, true);
-	}
+        ItemWrapper account = root.getChild("AccountButton");
+        if (isValid(account)) {
+            accountTransform = ComponentRetriever.get(account.getEntity(), TransformComponent.class, sceneLoader.getEngine());
+            accountDimensions = ComponentRetriever.get(account.getEntity(), DimensionsComponent.class, sceneLoader.getEngine());
+        }
+    }
 
-	@Override
-	public void pause() {
-	}
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+    }
 
-	@Override
-	public void resume() {
-	}
+    @Override public void pause() {}
+    @Override public void resume() {}
 
-	@Override
-	public void hide() {
-		Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-	}
+    @Override
+    public void hide() {
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+    }
 
-	@Override
-	public void dispose() {
-		if (stage != null) {
-			stage.dispose();
-		}
-	}
+    @Override
+    public void render(float delta) {
+        viewport.apply();
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        sceneLoader.getEngine().setDelta(delta);
+        sceneLoader.getEngine().process();
+
+        updateInput();
+    }
+
+    private void updateInput() {
+        mouseVector.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+        viewport.unproject(mouseVector);
+        boolean clicked = Gdx.input.justTouched();
+
+        if (clicked && playTransform != null && playDimensions != null && getBounds(playTransform, playDimensions).contains(mouseVector.x, mouseVector.y)) {
+            onPlay();
+        }
+        if (clicked && exitTransform != null && exitDimensions != null && getBounds(exitTransform, exitDimensions).contains(mouseVector.x, mouseVector.y)) {
+            onExit();
+        }
+        if (clicked && settingsTransform != null && settingsDimensions != null && getBounds(settingsTransform, settingsDimensions).contains(mouseVector.x, mouseVector.y)) {
+            onSettings();
+        }
+        if (clicked && accountTransform != null && accountDimensions != null && getBounds(accountTransform, accountDimensions).contains(mouseVector.x, mouseVector.y)) {
+            onAccount();
+        }
+    }
+
+    private Rectangle getBounds(TransformComponent t, DimensionsComponent d) {
+        float w = d.width * t.scaleX;
+        float h = d.height * t.scaleY;
+        float x = t.x - (t.originX * (t.scaleX - 1));
+        float y = t.y - (t.originY * (t.scaleY - 1));
+        return new Rectangle(x, y, w, h);
+    }
+
+    private void onPlay() {
+        game.setScreen(new LevelSelectScreen(game));
+    }
+
+    private void onExit() {
+        Gdx.app.exit();
+    }
+
+    private void onSettings() {}
+
+    private void onAccount() {}
+
+    @Override
+    public void dispose() {}
 }

@@ -92,6 +92,13 @@ public class PlayerController {
 			delta = 0.1f;
 		}
 
+		if (player.isDead()) {
+			player.respawn();
+			playerBody.setTransform(PhysicsConfig.PLAYER_SPAWN_X, PhysicsConfig.PLAYER_SPAWN_Y, 0f);
+			playerBody.setLinearVelocity(0f, 0f);
+			return;
+		}
+
 		player.isGrounded = groundContacts > 0;
 		if (player.isGrounded) {
 			player.canDoubleJump = true;

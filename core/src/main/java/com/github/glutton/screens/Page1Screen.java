@@ -1,4 +1,3 @@
-
 package com.github.glutton.screens;
 
 import com.badlogic.gdx.Gdx;
@@ -17,6 +16,7 @@ import com.github.glutton.GluttonGame;
 import com.github.glutton.background.ParallaxBackground;
 import com.github.glutton.entities.Enemy;
 import com.github.glutton.entities.TargetDummy;
+import com.github.glutton.player.PlayerState;
 import com.github.glutton.world.GameplaySession;
 import com.github.glutton.world.PhysicsConfig;
 
@@ -59,10 +59,8 @@ public class Page1Screen implements Screen {
             true
         );
 
-        // Fixed: ParallaxBackground requires a float argument.
         background = new ParallaxBackground(camera.position.y);
 
-        // Load the level.
         SceneConfiguration config = new SceneConfiguration();
         sceneLoader = new SceneLoader(config);
         sceneLoader.loadScene("Page1", viewport);
@@ -114,14 +112,12 @@ public class Page1Screen implements Screen {
             debugHitbox = !debugHitbox;
         }
 
-        // Remove defeated enemies and respawn them.
         enemies.removeIf(Enemy::isDestroyed);
 
         if (enemies.isEmpty()) {
             spawnEnemy();
         }
 
-        // Step Box2D physics.
         if (sceneLoader != null && sceneLoader.getWorld() != null) {
             float safeDelta = Math.min(delta, 0.25f);
             float subDelta =
@@ -136,26 +132,26 @@ public class Page1Screen implements Screen {
             }
         }
 
-        // Update gameplay and enemy AI.
         if (gameplaySession != null) {
             gameplaySession.update(delta, enemies);
 
-            float playerX = gameplaySession.getPlayerState().x;
-            float playerY = gameplaySession.getPlayerState().y;
+            PlayerState playerState = gameplaySession.getPlayerState();
+            float playerX = playerState.x;
+            float playerY = playerState.y;
 
             for (Enemy enemy : enemies) {
-                enemy.updateAggro(delta, playerX, playerY);
+                enemy.updateAI(delta, playerState);
 
                 if (enemy.canAttack(playerX, playerY)) {
+                    playerState.takeDamage(enemy.getAttackDamage());
                     Gdx.app.log(
                         "Enemy",
-                        "Enemy attacked! Damage: "
-                            + enemy.getAttackDamage()
+                        "Enemy attacked player! Damage: "
+                            + enemy.getAttackDamage() + " | Current Player HP: " + playerState.health
                     );
                 }
             }
 
-            // Follow the player.
             camera.position.set(
                 playerX,
                 playerY + 32f,
@@ -175,12 +171,10 @@ public class Page1Screen implements Screen {
         float cameraBottomEdge =
             camera.position.y - viewHeight / 2f;
 
-        // Draw parallax background.
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
         if (background != null) {
-            // Fixed: draw() requires seven arguments.
             background.draw(
                 batch,
                 camera.position.x,
@@ -194,13 +188,11 @@ public class Page1Screen implements Screen {
 
         batch.end();
 
-        // Render the level.
         if (sceneLoader != null && sceneLoader.getEngine() != null) {
             sceneLoader.getEngine().setDelta(delta);
             sceneLoader.getEngine().process();
         }
 
-        // Render gameplay.
         if (gameplaySession != null) {
             batch.setProjectionMatrix(camera.combined);
             batch.begin();
@@ -224,7 +216,6 @@ public class Page1Screen implements Screen {
             shapeRenderer.end();
         }
 
-        // Render physics hitboxes when F12 is enabled.
         if (debugHitbox
             && sceneLoader != null
             && sceneLoader.getWorld() != null) {
@@ -282,8 +273,6 @@ public class Page1Screen implements Screen {
             box2dDebugRenderer = null;
         }
 
-        // Dispose SceneLoader only if your library version
-        // supports it. Remove this block if dispose() is undefined.
         if (sceneLoader != null) {
             sceneLoader.dispose();
             sceneLoader = null;

@@ -3,6 +3,7 @@ package com.github.glutton.entities;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.github.glutton.player.PlayerState;
 
 public abstract class Enemy {
 
@@ -16,7 +17,13 @@ public abstract class Enemy {
     protected float attackRange;
     protected float attackCooldown;
     protected float attackTimer = 0f;
-    protected float moveSpeed = 90f;
+    protected float moveSpeed = 100f;
+
+    protected float velocityY = 0f;
+    protected boolean isGrounded = true;
+    protected float gravity = -900f;
+    protected float jumpVelocity = 350f;
+    protected float jumpCooldown = 0f;
 
     protected boolean aggro = false;
     protected final Vector2 spawnPosition = new Vector2();
@@ -65,18 +72,19 @@ public abstract class Enemy {
         return aggro;
     }
 
-    public void updateAggro(float delta, float playerX, float playerY) {
+    public void updateAI(float delta, PlayerState player) {
         if (isDestroyed()) {
             return;
         }
 
         attackTimer = Math.max(0f, attackTimer - delta);
+        jumpCooldown = Math.max(0f, jumpCooldown - delta);
 
-        float enemyX = bounds.x + bounds.width / 2f;
-        float enemyY = bounds.y + bounds.height / 2f;
+        float enemyCenterX = bounds.x + bounds.width / 2f;
+        float enemyCenterY = bounds.y + bounds.height / 2f;
 
-        float dx = playerX - enemyX;
-        float dy = playerY - enemyY;
+        float dx = player.x - enemyCenterX;
+        float dy = player.y - enemyCenterY;
         float distanceSquared = dx * dx + dy * dy;
 
         if (distanceSquared <= detectionRange * detectionRange) {
@@ -87,18 +95,38 @@ public abstract class Enemy {
             return;
         }
 
-        // Chase the player while outside attack range.
         if (distanceSquared > attackRange * attackRange) {
-            float distance = (float) Math.sqrt(distanceSquared);
+            float moveX = 0f;
+            if (dx > 0) {
+                moveX = moveSpeed * delta;
+            } else if (dx < 0) {
+                moveX = -moveSpeed * delta;
+            }
+            bounds.x += moveX;
+        }
 
-            if (distance > 0f) {
-                float moveX = dx / distance * moveSpeed * delta;
-                float moveY = dy / distance * moveSpeed * delta;
+        velocityY += gravity * delta;
+        bounds.y += velocityY * delta;
 
-                bounds.x += moveX;
-                bounds.y += moveY;
+        if (bounds.y <= 150f) {
+            bounds.y = 150f;
+            velocityY = 0f;
+            isGrounded = true;
+        } else {
+            isGrounded = false;
+        }
+
+        if (isGrounded && jumpCooldown <= 0f) {
+            boolean playerIsJumpingOrHigher = player.movementState == PlayerState.MovementState.JUMP || player.y > enemyCenterY + 30f;
+            if (playerIsJumpingOrHigher && distanceSquared < (detectionRange * 0.75f) * (detectionRange * 0.75f)) {
+                velocityY = jumpVelocity;
+                isGrounded = false;
+                jumpCooldown = 1.5f;
             }
         }
+    }
+
+    public void updateAggro(float delta, float playerX, float playerY) {
     }
 
     public boolean canAttack(float playerX, float playerY) {
@@ -106,11 +134,11 @@ public abstract class Enemy {
             return false;
         }
 
-        float enemyX = bounds.x + bounds.width / 2f;
-        float enemyY = bounds.y + bounds.height / 2f;
+        float enemyCenterX = bounds.x + bounds.width / 2f;
+        float enemyCenterY = bounds.y + bounds.height / 2f;
 
-        float dx = playerX - enemyX;
-        float dy = playerY - enemyY;
+        float dx = playerX - enemyCenterX;
+        float dy = playerY - enemyCenterY;
 
         if (dx * dx + dy * dy <= attackRange * attackRange) {
             attackTimer = attackCooldown;
@@ -125,6 +153,8 @@ public abstract class Enemy {
         bounds.setPosition(spawnPosition);
         aggro = false;
         attackTimer = 0f;
+        velocityY = 0f;
+        isGrounded = true;
     }
 
     public abstract void render(ShapeRenderer shapeRenderer);

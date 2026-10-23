@@ -11,6 +11,22 @@ public class PlayerState {
     public boolean isGrounded = false;
     public boolean canDoubleJump = true;
 
+    // Player Health & Respawn
+    public int maxHealth = 100;
+    public int health = 100;
+
+    public boolean isDead() {
+        return health <= 0;
+    }
+
+    public void takeDamage(int amount) {
+        health = Math.max(0, health - amount);
+    }
+
+    public void respawn() {
+        health = maxHealth;
+    }
+
     public final WeaponState weaponState = new WeaponState();
 
     public final float spriteScale = PhysicsConfig.PLAYER_SPRITE_SCALE;
