@@ -1,4 +1,3 @@
-
 package com.github.glutton.entities;
 
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;

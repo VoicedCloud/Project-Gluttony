@@ -1,19 +1,18 @@
-
 package com.github.glutton.screens;
 
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.Input;
-import com.github.glutton.background.ParallaxBackground;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.glutton.GluttonGame;
+import com.github.glutton.background.ParallaxBackground;
 import com.github.glutton.entities.Enemy;
 import com.github.glutton.entities.TargetDummy;
 import com.github.glutton.world.GameplaySession;
@@ -116,12 +115,9 @@ public class Page1Screen implements Screen {
 
         // 1. Step physics.
         if (sceneLoader.getWorld() != null) {
-            float subDelta =
-                delta / PhysicsConfig.PHYSICS_SUBSTEPS;
+            float subDelta = delta / PhysicsConfig.PHYSICS_SUBSTEPS;
 
-            for (int i = 0;
-                    i < PhysicsConfig.PHYSICS_SUBSTEPS;
-                    i++) {
+            for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
                 sceneLoader.getWorld().step(
                     subDelta,
                     PhysicsConfig.VELOCITY_ITERATIONS,
@@ -143,8 +139,7 @@ public class Page1Screen implements Screen {
             if (currentEnemy.canAttack(playerX, playerY)) {
                 Gdx.app.log(
                     "Enemy",
-                    "Enemy attacked! Damage: "
-                        + currentEnemy.getAttackDamage()
+                    "Enemy attacked! Damage: " + currentEnemy.getAttackDamage()
                 );
             }
         }
@@ -152,11 +147,8 @@ public class Page1Screen implements Screen {
         float viewWidth = camera.viewportWidth * camera.zoom;
         float viewHeight = camera.viewportHeight * camera.zoom;
 
-        float cameraLeftEdge =
-            camera.position.x - viewWidth / 2f;
-
-        float cameraBottomEdge =
-            camera.position.y - viewHeight / 2f;
+        float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+        float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
         // 4. Draw background.
         batch.setProjectionMatrix(camera.combined);
@@ -183,9 +175,7 @@ public class Page1Screen implements Screen {
         gameplaySession.render(batch, shapeRenderer);
         batch.end();
 
-        gameplaySession.renderTrails(
-            shapeRenderer, camera.combined
-        );
+        gameplaySession.renderTrails(shapeRenderer, camera.combined);
 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);

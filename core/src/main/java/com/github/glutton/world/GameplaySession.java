@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
+import com.github.glutton.entities.Enemy;
 import com.github.glutton.player.PlayerAnimator;
 import com.github.glutton.player.PlayerController;
 import com.github.glutton.player.PlayerGunRenderer;
@@ -38,10 +39,14 @@ public class GameplaySession {
         this(camera, gunTexturePath, "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[CASING] Glock - P80.png", sceneLoader);
     }
 
-    public void update(float delta, List<com.github.glutton.entities.Enemy> enemies) {
+    public void update(float delta, List<Enemy> enemies) {
         playerController.update(playerState, delta);
         playerAnimator.update(delta);
         bulletManager.update(delta, enemies);
+    }
+
+    public void update(float delta) {
+        update(delta, null);
     }
 
     public void render(SpriteBatch batch, ShapeRenderer shapeRenderer) {
@@ -84,9 +89,5 @@ public class GameplaySession {
         if (bulletManager != null) {
             bulletManager.dispose();
         }
-    }
-
-    public void update(float delta) {
-        update(delta, null);
     }
 }
