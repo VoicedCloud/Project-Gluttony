@@ -9,9 +9,10 @@ public class TargetDummy extends Enemy {
 
     public TargetDummy(World world, float x, float y) {
         this(
-            world, x, y,
+            world,
+            x, y,
             32f, 48f,
-            150, 20,
+            1500, 5,
             250f, 40f, 1f
         );
     }
@@ -39,13 +40,11 @@ public class TargetDummy extends Enemy {
 
     @Override
     public void render(ShapeRenderer renderer) {
-        if (isDestroyed()) {
+        if (isDestroyed() || isBodyDisposed()) {
             return;
         }
 
-        renderer.setColor(
-            aggro ? Color.ORANGE : Color.RED
-        );
+        renderer.setColor(aggro ? Color.ORANGE : Color.RED);
 
         renderer.rect(
             bounds.x,
@@ -58,27 +57,20 @@ public class TargetDummy extends Enemy {
 
         renderer.setColor(Color.DARK_GRAY);
         renderer.rect(
-            bounds.x,
-            barY,
-            bounds.width,
-            4f
+            bounds.x, barY,
+            bounds.width, 4f
         );
 
         float percentage = maxHealth > 0
             ? (float) health / maxHealth
             : 0f;
 
-        percentage = Math.max(
-            0f,
-            Math.min(1f, percentage)
-        );
+        percentage = Math.max(0f, Math.min(1f, percentage));
 
         renderer.setColor(Color.GREEN);
         renderer.rect(
-            bounds.x,
-            barY,
-            bounds.width * percentage,
-            4f
+            bounds.x, barY,
+            bounds.width * percentage, 4f
         );
     }
 }

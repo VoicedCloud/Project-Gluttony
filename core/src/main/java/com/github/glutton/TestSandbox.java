@@ -82,8 +82,8 @@ public class TestSandbox extends ApplicationAdapter {
             floor.y + floor.height,
             32f,
             48f,
-            150,
-            20,
+            1500,
+            7,
             250f,
             40f,
             1f
