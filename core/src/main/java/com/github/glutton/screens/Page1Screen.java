@@ -1,6 +1,5 @@
 package com.github.glutton.screens;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
@@ -25,6 +24,7 @@ import games.rednblack.editor.renderer.SceneLoader;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.badlogic.gdx.Gdx;
 
 public class Page1Screen implements Screen {
 
@@ -42,11 +42,12 @@ public class Page1Screen implements Screen {
 
     private boolean debugHitbox = false;
     private GameplaySession gameplaySession;
+    
+ 
 
     public Page1Screen(GluttonGame game) {
         this.game = game;
-    }
-
+    }    
     @Override
     public void show() {
         camera = new OrthographicCamera();

@@ -1,104 +1,113 @@
 pack.png
 	size: 2048, 2048
-5a0ac29f5a997e1c2cea10a1
-	bounds: 1, 955, 1280, 1091
+002eaf3c4818892829803d19a6cefb82
+	bounds: 1, 206, 1200, 750
+	split: 0, 0, 0, 0
 BookMargin
-	bounds: 165, 1, 48, 48
+	bounds: 1923, 1924, 48, 48
 	split: 9, 9, 9, 9
 Book_GluttonUI
-	bounds: 1, 19, 162, 96
+	bounds: 1203, 346, 162, 96
 	split: 11, 11, 3, 13
 DarkCircle.
-	bounds: 18, 4, 13, 13
+	bounds: 1973, 2025, 13, 13
 	split: 3, 3, 3, 3
 Dead
 	index: 0
-	bounds: 203, 189, 128, 128
+	bounds: 1717, 828, 128, 128
 Dead
 	index: 1
-	bounds: 327, 59, 128, 128
+	bounds: 203, 76, 128, 128
 Dead
 	index: 2
-	bounds: 333, 189, 128, 128
+	bounds: 1203, 216, 128, 128
 Dead
 	index: 3
-	bounds: 457, 59, 128, 128
+	bounds: 1717, 698, 128, 128
 Dead
 	index: 4
-	bounds: 463, 189, 128, 128
+	bounds: 333, 76, 128, 128
 Hurt
 	index: 0
-	bounds: 587, 59, 128, 128
+	bounds: 1717, 568, 128, 128
 Hurt
 	index: 1
-	bounds: 593, 189, 128, 128
+	bounds: 463, 76, 128, 128
 Hurt
 	index: 2
-	bounds: 717, 59, 128, 128
+	bounds: 593, 76, 128, 128
 Idle
 	index: 0
-	bounds: 723, 189, 128, 128
+	bounds: 723, 76, 128, 128
 Idle
 	index: 1
-	bounds: 847, 59, 128, 128
+	bounds: 853, 76, 128, 128
 Idle
 	index: 2
-	bounds: 853, 189, 128, 128
+	bounds: 983, 76, 128, 128
 Idle
 	index: 3
-	bounds: 977, 59, 128, 128
+	bounds: 1717, 438, 128, 128
 Idle
 	index: 4
-	bounds: 977, 59, 128, 128
+	bounds: 1717, 438, 128, 128
 Idle
 	index: 5
-	bounds: 983, 189, 128, 128
+	bounds: 1367, 314, 128, 128
+PlaceHolderBackgroundMainMenu
+	bounds: 1, 958, 1920, 1080
+Rat_Typewriter
+	bounds: 1203, 444, 512, 512
 Run
 	index: 0
-	bounds: 1107, 59, 128, 128
+	bounds: 1497, 314, 128, 128
 Run
 	index: 1
-	bounds: 1113, 189, 128, 128
+	bounds: 1113, 76, 128, 128
 Run
 	index: 2
-	bounds: 1237, 59, 128, 128
+	bounds: 1243, 86, 128, 128
 Run
 	index: 3
-	bounds: 1243, 189, 128, 128
+	bounds: 1847, 828, 128, 128
 Run
 	index: 4
-	bounds: 1367, 59, 128, 128
+	bounds: 1847, 698, 128, 128
 Run
 	index: 5
-	bounds: 1373, 189, 128, 128
+	bounds: 1847, 568, 128, 128
 Run
 	index: 6
-	bounds: 1497, 59, 128, 128
+	bounds: 1847, 438, 128, 128
 Run
 	index: 7
-	bounds: 1283, 1918, 128, 128
+	bounds: 1627, 308, 128, 128
 Run
 	index: 8
-	bounds: 1413, 1918, 128, 128
+	bounds: 1757, 308, 128, 128
 Run
 	index: 9
-	bounds: 1413, 1788, 128, 128
+	bounds: 1887, 308, 128, 128
 Solid_black
-	bounds: 1, 117, 200, 200
+	bounds: 1, 4, 200, 200
 	split: 0, 0, 0, 0
 Stratis Sedria (Brown) - Full Car
-	bounds: 165, 51, 160, 64
+	bounds: 203, 10, 160, 64
 ThickGround
-	bounds: 203, 123, 48, 64
+	bounds: 1923, 1974, 48, 64
 Tools_Crafting_Writing_Pen_Quill_Feather
-	bounds: 1, 2, 15, 15
-placeholderlogo
-	bounds: 1, 319, 1500, 634
+	bounds: 1333, 329, 15, 15
 white-pixel
-	bounds: 18, 1, 1, 1
+	bounds: 1, 1, 1, 1
 
 pack2.png
-	size: 2048, 1024
-002eaf3c4818892829803d19a6cefb82
-	bounds: 1, 1, 1200, 750
-	split: 0, 0, 0, 0
+	size: 2048, 2048
+5a0ac29f5a997e1c2cea10a1
+	bounds: 1, 735, 1280, 1091
+Vignette-PNG-Image
+	bounds: 1, 1, 1024, 732
+
+pack3.png
+	size: 2048, 512
+logo placeholder
+	bounds: 1, 1, 1500, 325
