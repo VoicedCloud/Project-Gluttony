@@ -1,4 +1,3 @@
-
 package com.github.glutton.entities;
 
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -11,8 +10,12 @@ public class Hound extends Enemy {
             float x, float y,
             float width, float height
     ) {
-        super(world, x, y, width, height,
-              120, 3, 350f, 45f, 1f);
+        super(
+            world,
+            x, y,
+            width, height,
+            120, 3, 350f, 45f, 1f
+        );
 
         moveSpeed = 150f;
         jumpVelocity = 250f;
@@ -20,24 +23,52 @@ public class Hound extends Enemy {
 
     @Override
     public void render(ShapeRenderer shapeRenderer) {
-        float w = bounds.width * 0.90f;
-        float h = bounds.height * 0.40f;
+        float w = bounds.width;
+        float h = bounds.height * 0.45f;
 
-        float x = bounds.x + (bounds.width - w) / 2f;
+        float x = bounds.x;
         float y = bounds.y;
 
         // Orange-red body
-        shapeRenderer.setColor(0.95f, 0.30f, 0.10f, 1f);
-        shapeRenderer.rect(x, y, w, h);
+        float bodyHeight = h * 0.65f;
 
-        // Head at the front (right side)
-        float headSize = h * 0.85f;
+        shapeRenderer.setColor(0.95f, 0.30f, 0.10f, 1f);
+        shapeRenderer.rect(
+            x,
+            y,
+            w,
+            bodyHeight
+        );
+
+        // Head at the front
+        float headSize = h * 0.80f;
+
         shapeRenderer.setColor(1f, 0.55f, 0.15f, 1f);
         shapeRenderer.rect(
-            x + w - headSize * 0.65f,
-            y + h * 0.45f,
+            x + w - headSize * 0.80f,
+            y + bodyHeight,
             headSize,
             headSize
+        );
+
+        // Front and rear legs
+        float legWidth = w * 0.15f;
+        float legHeight = h * 0.35f;
+
+        shapeRenderer.setColor(0.65f, 0.15f, 0.05f, 1f);
+
+        shapeRenderer.rect(
+            x + w * 0.15f,
+            y,
+            legWidth,
+            legHeight
+        );
+
+        shapeRenderer.rect(
+            x + w * 0.70f,
+            y,
+            legWidth,
+            legHeight
         );
     }
 }

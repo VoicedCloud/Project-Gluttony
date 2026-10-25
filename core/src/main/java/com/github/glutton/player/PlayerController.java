@@ -204,11 +204,8 @@ public class PlayerController {
 
 	private void handleWeaponInput(PlayerState player) {
 		WeaponState ws = player.weaponState;
-		if (Gdx.input.isKeyJustPressed(Input.Keys.E) && !ws.isReloading) {
-			WeaponProfile[] values = WeaponProfile.values();
-			ws.activeWeapon = values[(ws.activeWeapon.ordinal() + 1) % values.length];
-			ws.currentAmmo = ws.activeWeapon.maxAmmo;
-		}
+		
+		
 		if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
 			startReload(ws);
 		}

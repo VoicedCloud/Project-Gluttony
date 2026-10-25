@@ -1,16 +1,19 @@
-
 package com.github.glutton.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -23,6 +26,7 @@ import com.github.glutton.entities.Zombie;
 import com.github.glutton.entities.Ghoul;
 import com.github.glutton.entities.Hound;
 import com.github.glutton.player.PlayerState;
+import com.github.glutton.weapons.WeaponProfile;
 import com.github.glutton.world.GameplaySession;
 import com.github.glutton.world.PhysicsConfig;
 
@@ -30,9 +34,10 @@ import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class Page1Screen implements Screen {
 
@@ -42,6 +47,10 @@ public class Page1Screen implements Screen {
     private SceneLoader sceneLoader;
     private Viewport viewport;
     private OrthographicCamera camera;
+    private OrthographicCamera hudCamera;
+
+    private final Map<WeaponProfile, Texture> hudWeaponTextures =
+        new EnumMap<>(WeaponProfile.class);
 
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -52,34 +61,37 @@ public class Page1Screen implements Screen {
     private boolean debugHitbox = false;
     private GameplaySession gameplaySession;
 
-    private static final float ENEMY_WIDTH = 32f;
-    private static final float ENEMY_HEIGHT = 48f;
+    private static final int MAX_DEATHS = 3;
+    private int deathCount = 0;
+    private boolean gameOver = false;
 
+    private final Rectangle retryButtonBounds = new Rectangle();
+    private final Rectangle menuButtonBounds = new Rectangle();
+    private final Vector2 gameOverTouch = new Vector2();
+
+    private static final float ENEMY_WIDTH = 9.6f;
+    private static final float ENEMY_HEIGHT = 19.2f;
     private static final float ENEMY_SPAWN_X = 200f;
     private static final float ENEMY_SPAWN_Y = 150f;
-    private static final float SPAWN_SPACING = 70f;
 
     private static final int BOSS_MAX_HEALTH = 1500;
-    private static final float BOSS_BAR_SHOW_DISTANCE = 250f;
+    private static final int BOSS_BASE_DAMAGE = 5;
 
-    private static final int TOTAL_WAVES = 3;
-    private static final int KILLS_REQUIRED_FOR_BOSS = 10;
-    private static final float WAVE_DELAY = 2f;
-
-    private static final float MOB_BAR_HEIGHT = 4f;
-    private static final float MOB_BAR_MIN_WIDTH = 24f;
-    private static final float MOB_BAR_WIDTH_FACTOR = 1.2f;
+    private static final int TOTAL_WAVES = 6;
+    private static final float BUY_TIME_SECONDS = 15f;
+    private static final int SHOTGUN_COST = 200;
+    private static final int AK_COST = 180;
 
     private int currentWave = 0;
     private int totalKills = 0;
+    private int currency = 0;
 
     private boolean bossSpawned = false;
     private boolean waitingForNextWave = false;
-    private boolean bossDefeated = false;
+    private boolean shopOpen = false;
 
     private float waveDelayTimer = 0f;
-
-    private Enemy bossEnemy;
+    private String shopMessage = "";
 
     public Page1Screen(GluttonGame game) {
         this.game = game;
@@ -87,8 +99,18 @@ public class Page1Screen implements Screen {
 
     @Override
     public void show() {
+        Gdx.input.setCursorCatched(false);
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+
         camera = new OrthographicCamera();
         camera.zoom = 0.25f;
+
+        hudCamera = new OrthographicCamera();
+        hudCamera.setToOrtho(
+            false,
+            Gdx.graphics.getWidth(),
+            Gdx.graphics.getHeight()
+        );
 
         viewport = new FitViewport(1280f, 720f, camera);
         viewport.update(
@@ -113,7 +135,32 @@ public class Page1Screen implements Screen {
         box2dDebugRenderer = new Box2DDebugRenderer();
 
         hudFont = new BitmapFont();
-        hudFont.getData().setScale(0.45f);
+        hudFont.getData().setScale(0.85f);
+
+        for (WeaponProfile weapon : WeaponProfile.values()) {
+            try {
+                hudWeaponTextures.put(
+                    weapon,
+                    new Texture(Gdx.files.internal(weapon.idleTexturePath))
+                );
+            } catch (Exception missingWeaponSprite) {
+                try {
+                    hudWeaponTextures.put(
+                        weapon,
+                        new Texture(
+                            Gdx.files.internal("sprites/weapons/Glock - P80.png")
+                        )
+                    );
+                } catch (Exception missingFallback) {
+                    Gdx.app.error(
+                        "HUD",
+                        "Could not load HUD weapon sprite for "
+                            + weapon.displayName,
+                        missingFallback
+                    );
+                }
+            }
+        }
 
         gameplaySession = new GameplaySession(
             camera,
@@ -129,25 +176,6 @@ public class Page1Screen implements Screen {
     // WAVE MANAGEMENT
     // --------------------------------------------------
 
-    private boolean canSpawnEnemies() {
-        return sceneLoader != null
-            && sceneLoader.getWorld() != null
-            && !sceneLoader.getWorld().isLocked();
-    }
-
-    private float nextSpawnX() {
-        float rightmostX = ENEMY_SPAWN_X;
-
-        for (Enemy enemy : enemies) {
-            rightmostX = Math.max(
-                rightmostX,
-                enemy.bounds.x + enemy.bounds.width
-            );
-        }
-
-        return rightmostX + SPAWN_SPACING;
-    }
-
     private void startNextWave() {
         if (bossSpawned || currentWave >= TOTAL_WAVES) {
             return;
@@ -155,27 +183,34 @@ public class Page1Screen implements Screen {
 
         currentWave++;
         waitingForNextWave = false;
+        shopOpen = false;
         waveDelayTimer = 0f;
+        shopMessage = "";
 
         Gdx.app.log("Waves", "Starting Wave " + currentWave);
 
         switch (currentWave) {
-            case 1:
-                // 3 Zombies.
-                spawnZombieGroup(3);
-                break;
-
+                    case 1:
+             spawnMixedWave(10, 6, 3, 1);
+             break;
             case 2:
-                // 2 Zombies + 1 Ghoul.
-                spawnZombieGroup(2);
-                spawnGhoulGroup(1);
+                spawnMixedWave(10, 6, 3, 1);
                 break;
 
             case 3:
-                // 2 Zombies + 1 Ghoul + 1 Hound.
-                spawnZombieGroup(2);
-                spawnGhoulGroup(1);
-                spawnHoundGroup(1);
+                spawnMixedWave(10, 5, 3, 2);
+                break;
+
+            case 4:
+                spawnMixedWave(15, 8, 4, 3);
+                break;
+
+            case 5:
+                spawnMixedWave(20, 10, 5, 5);
+                break;
+
+            case 6:
+                spawnBoss();
                 break;
 
             default:
@@ -183,133 +218,211 @@ public class Page1Screen implements Screen {
         }
     }
 
-    private void spawnZombieGroup(int count) {
-        if (!canSpawnEnemies()) {
-            return;
-        }
+    private void spawnMixedWave(
+            int total,
+            int zombies,
+            int ghouls,
+            int hounds
+    ) {
+        spawnMobGroup(zombies, "zombie");
+        spawnMobGroup(ghouls, "ghoul");
+        spawnMobGroup(hounds, "hound");
 
-        for (int i = 0; i < count; i++) {
-            enemies.add(new Zombie(
-                sceneLoader.getWorld(),
-                nextSpawnX(),
-                ENEMY_SPAWN_Y,
-                ENEMY_WIDTH,
-                ENEMY_HEIGHT
-            ));
-        }
+        int remaining = total - zombies - ghouls - hounds;
 
-        Gdx.app.log("Waves", "Spawned " + count + " Zombie(s).");
+        if (remaining > 0) {
+            spawnMobGroup(remaining, "zombie");
+        }
     }
 
-    private void spawnGhoulGroup(int count) {
-        if (!canSpawnEnemies()) {
+    private void spawnMobGroup(int count, String enemyType) {
+        if (sceneLoader == null || sceneLoader.getWorld() == null) {
             return;
         }
 
         for (int i = 0; i < count; i++) {
-            enemies.add(new Ghoul(
-                sceneLoader.getWorld(),
-                nextSpawnX(),
-                ENEMY_SPAWN_Y,
-                ENEMY_WIDTH,
-                ENEMY_HEIGHT
-            ));
+            float spawnX = ENEMY_SPAWN_X + i * 70f;
+            float spawnY = ENEMY_SPAWN_Y;
+
+            Enemy enemy = createEnemy(enemyType, spawnX, spawnY);
+
+            if (enemy != null) {
+                enemies.add(enemy);
+            }
         }
 
-        Gdx.app.log("Waves", "Spawned " + count + " Ghoul(s).");
+        Gdx.app.log(
+            "Waves",
+            "Spawned " + count + " " + enemyType
+                + "(s). Total kills: " + totalKills
+        );
     }
 
-    private void spawnHoundGroup(int count) {
-        if (!canSpawnEnemies()) {
-            return;
-        }
+    private Enemy createEnemy(String enemyType, float x, float y) {
+        switch (enemyType.toLowerCase()) {
+            case "zombie":
+                return new Zombie(
+                    sceneLoader.getWorld(),
+                    x,
+                    y,
+                    ENEMY_WIDTH,
+                    ENEMY_HEIGHT
+                );
 
-        for (int i = 0; i < count; i++) {
-            enemies.add(new Hound(
-                sceneLoader.getWorld(),
-                nextSpawnX(),
-                ENEMY_SPAWN_Y,
-                ENEMY_WIDTH,
-                ENEMY_HEIGHT
-            ));
-        }
+            case "ghoul":
+                return new Ghoul(
+                    sceneLoader.getWorld(),
+                    x,
+                    y,
+                    ENEMY_WIDTH,
+                    ENEMY_HEIGHT
+                );
 
-        Gdx.app.log("Waves", "Spawned " + count + " Hound(s).");
+            case "hound":
+                return new Hound(
+                    sceneLoader.getWorld(),
+                    x,
+                    y,
+                    ENEMY_WIDTH,
+                    ENEMY_HEIGHT
+                );
+
+            default:
+                Gdx.app.error("Waves", "Unknown enemy type: " + enemyType);
+                return null;
+        }
     }
 
     private void spawnBoss() {
-        if (bossSpawned || !canSpawnEnemies()) {
+        if (bossSpawned
+                || sceneLoader == null
+                || sceneLoader.getWorld() == null) {
             return;
         }
 
         bossSpawned = true;
         waitingForNextWave = false;
-        bossDefeated = false;
+        shopOpen = false;
 
-        bossEnemy = new TargetDummy(
+        float bossWidth = ENEMY_WIDTH * 1.5f;
+        float bossHeight = ENEMY_HEIGHT * 1.5f;
+
+        TargetDummy boss = new TargetDummy(
             sceneLoader.getWorld(),
             ENEMY_SPAWN_X,
             ENEMY_SPAWN_Y,
-            ENEMY_WIDTH,
-            ENEMY_HEIGHT,
+            bossWidth,
+            bossHeight,
             BOSS_MAX_HEALTH,
-            5,
+            BOSS_BASE_DAMAGE,
             250f,
             40f,
             1f
         );
 
-        enemies.add(bossEnemy);
+        enemies.add(boss);
 
-        Gdx.app.log(
-            "Waves",
-            "BOSS SPAWNED! HP: " + BOSS_MAX_HEALTH
-        );
+        Gdx.app.log("Waves", "BOSS SPAWNED! Prepare for the fight!");
     }
 
     private void updateWaveProgress(float delta) {
-        if (bossSpawned || bossDefeated) {
-            return;
-        }
-
-        if (!enemies.isEmpty()) {
-            return;
-        }
-
-        if (totalKills >= KILLS_REQUIRED_FOR_BOSS) {
-            spawnBoss();
+        if (bossSpawned || !enemies.isEmpty()) {
             return;
         }
 
         if (!waitingForNextWave) {
+            if (currentWave >= TOTAL_WAVES) {
+                return;
+            }
+
             waitingForNextWave = true;
-            waveDelayTimer = WAVE_DELAY;
+            shopOpen = true;
+            waveDelayTimer = BUY_TIME_SECONDS;
+
+            shopMessage =
+                "Wave cleared! [1] Shotgun $200  [2] AK-47 $180";
 
             Gdx.app.log(
                 "Waves",
-                "Wave " + currentWave
-                    + " cleared. Next wave incoming."
+                "Wave " + currentWave + " cleared. Shop open."
             );
         }
 
-        waveDelayTimer -= delta;
+        if (shopOpen) {
+            handleShopInput();
 
-        if (waveDelayTimer <= 0f) {
-            if (currentWave < TOTAL_WAVES) {
+            waveDelayTimer -= delta;
+
+            if (waveDelayTimer <= 0f) {
                 startNextWave();
-            } else if (totalKills >= KILLS_REQUIRED_FOR_BOSS) {
-                spawnBoss();
-            } else {
-                Gdx.app.error(
-                    "Waves",
-                    "All tutorial waves ended with "
-                        + totalKills + " kills."
-                );
             }
         }
     }
 
-    // --------------------------------------------------
+    private void handleShopInput() {
+        if (gameplaySession == null) {
+            return;
+        }
+
+        PlayerState player = gameplaySession.getPlayerState();
+
+        if (player == null || player.weaponState == null) {
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
+            if (player.weaponState.ownedWeapons.contains(
+                    WeaponProfile.SHOTGUN)) {
+                equipWeapon(player, WeaponProfile.SHOTGUN);
+                shopMessage = "Shotgun equipped!";
+            } else if (currency >= SHOTGUN_COST) {
+                currency -= SHOTGUN_COST;
+                player.weaponState.ownedWeapons.add(WeaponProfile.SHOTGUN);
+
+                equipWeapon(player, WeaponProfile.SHOTGUN);
+                shopMessage = "Shotgun purchased and equipped!";
+            } else {
+                shopMessage = "Not enough currency for the Shotgun.";
+            }
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
+            if (player.weaponState.ownedWeapons.contains(
+                    WeaponProfile.ASSAULT_RIFLE)) {
+                equipWeapon(player, WeaponProfile.ASSAULT_RIFLE);
+                shopMessage = "AK-47 equipped!";
+            } else if (currency >= AK_COST) {
+                currency -= AK_COST;
+                player.weaponState.ownedWeapons.add(
+                    WeaponProfile.ASSAULT_RIFLE
+                );
+
+                equipWeapon(player, WeaponProfile.ASSAULT_RIFLE);
+                shopMessage = "AK-47 purchased and equipped!";
+            } else {
+                shopMessage = "Not enough currency for the AK-47.";
+            }
+        }
+    }
+
+    private void equipWeapon(PlayerState player, WeaponProfile weapon) {
+        player.weaponState.activeWeapon = weapon;
+        player.weaponState.currentAmmo = weapon.maxAmmo;
+        player.weaponState.isReloading = false;
+    }
+
+    private int getEnemyReward(Enemy enemy) {
+        if (enemy instanceof Hound) {
+            return 13;
+        }
+
+        if (enemy instanceof Zombie || enemy instanceof Ghoul) {
+            return 10;
+        }
+
+        return 0;
+    }
+        // --------------------------------------------------
     // MAIN GAME LOOP
     // --------------------------------------------------
 
@@ -324,19 +437,24 @@ public class Page1Screen implements Screen {
         Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
+        if (!gameOver && Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
             debugHitbox = !debugHitbox;
         }
 
         PlayerState playerState = null;
 
         if (gameplaySession != null) {
-            gameplaySession.update(safeDelta, enemies);
             playerState = gameplaySession.getPlayerState();
+
+            if (!gameOver) {
+                gameplaySession.update(safeDelta, enemies);
+                playerState = gameplaySession.getPlayerState();
+            }
         }
 
-        // Remove defeated enemies while Box2D is unlocked.
-        if (sceneLoader != null
+        // Remove defeated enemies and award currency.
+        if (!gameOver
+                && sceneLoader != null
                 && sceneLoader.getWorld() != null
                 && !sceneLoader.getWorld().isLocked()) {
 
@@ -346,41 +464,35 @@ public class Page1Screen implements Screen {
                 Enemy enemy = iterator.next();
 
                 if (enemy.isDestroyed()) {
-                    boolean wasBoss = enemy == bossEnemy;
+                    int reward = getEnemyReward(enemy);
+                    currency += reward;
+                    totalKills++;
+
+                    Gdx.app.log(
+                        "Rewards",
+                        "Enemy defeated! +" + reward
+                            + " currency. Total: " + currency
+                    );
 
                     enemy.disposeBody();
                     iterator.remove();
-
-                    if (wasBoss) {
-                        bossDefeated = true;
-                        Gdx.app.log("Waves", "BOSS DEFEATED!");
-                    } else {
-                        totalKills++;
-
-                        Gdx.app.log(
-                            "Waves",
-                            "Enemy defeated! Kills: "
-                                + totalKills + "/"
-                                + KILLS_REQUIRED_FOR_BOSS
-                        );
-                    }
                 }
             }
         }
 
-        updateWaveProgress(safeDelta);
+        if (!gameOver) {
+            updateWaveProgress(safeDelta);
+        }
 
-        // Physics update.
-        if (sceneLoader != null
+        // Freeze physics after Game Over.
+        if (!gameOver
+                && sceneLoader != null
                 && sceneLoader.getWorld() != null) {
 
             float subDelta =
                 safeDelta / PhysicsConfig.PHYSICS_SUBSTEPS;
 
-            for (int i = 0;
-                    i < PhysicsConfig.PHYSICS_SUBSTEPS;
-                    i++) {
-
+            for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
                 sceneLoader.getWorld().step(
                     subDelta,
                     PhysicsConfig.VELOCITY_ITERATIONS,
@@ -394,7 +506,7 @@ public class Page1Screen implements Screen {
         }
 
         // Enemy AI and attacks.
-        if (playerState != null) {
+        if (playerState != null && !gameOver) {
             float playerX = playerState.x;
             float playerY = playerState.y;
 
@@ -402,29 +514,16 @@ public class Page1Screen implements Screen {
                 enemy.updateAI(safeDelta, playerState);
 
                 if (enemy.canAttack(playerX, playerY)) {
-                    int damage;
-
-                    if (enemy == bossEnemy) {
-                        damage = ThreadLocalRandom.current()
-                            .nextInt(5, 11);
-                    } else {
-                        damage = enemy.getAttackDamage();
-                    }
-
+                    int damage = enemy.getAttackDamage();
                     playerState.takeDamage(damage);
-
-                    Gdx.app.log(
-                        "Enemy",
-                        "Damage: " + damage
-                            + " | Player HP: "
-                            + playerState.health
-                    );
                 }
             }
 
+            handlePlayerDeath(playerState);
+
             camera.position.set(
-                playerX,
-                playerY + 32f,
+                playerState.x,
+                playerState.y + 32f,
                 0f
             );
         }
@@ -435,11 +534,8 @@ public class Page1Screen implements Screen {
         float viewWidth = camera.viewportWidth * camera.zoom;
         float viewHeight = camera.viewportHeight * camera.zoom;
 
-        float cameraLeftEdge =
-            camera.position.x - viewWidth / 2f;
-
-        float cameraBottomEdge =
-            camera.position.y - viewHeight / 2f;
+        float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+        float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
         // Background.
         batch.setProjectionMatrix(camera.combined);
@@ -460,13 +556,15 @@ public class Page1Screen implements Screen {
         batch.end();
 
         // Level scene.
-        if (sceneLoader != null
+        if (!gameOver
+                && sceneLoader != null
                 && sceneLoader.getEngine() != null) {
+
             sceneLoader.getEngine().setDelta(safeDelta);
             sceneLoader.getEngine().process();
         }
 
-        // Player, weapons, bullets, and enemy bodies.
+        // Player, weapons, bullets, and enemies.
         if (gameplaySession != null) {
             batch.setProjectionMatrix(camera.combined);
             batch.begin();
@@ -481,63 +579,61 @@ public class Page1Screen implements Screen {
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
+            gameplaySession.renderMuzzleFlash(shapeRenderer);
+
             for (Enemy enemy : enemies) {
                 enemy.render(shapeRenderer);
             }
 
-            // Draw health bars after the enemy bodies.
-            renderMobHealthBars();
-
-            gameplaySession.renderMuzzleFlash(shapeRenderer);
-
             shapeRenderer.end();
 
-            // Draw numeric HP labels after the shapes.
-            renderMobHealthLabels();
+            renderEnemyHealthBars();
         }
 
-        // HUD.
         if (playerState != null) {
-            renderPlayerHealth(playerState, viewWidth, viewHeight);
+            renderDoomHud(playerState);
             renderWaveStatus(viewWidth, viewHeight);
             renderBossHealth(playerState, viewWidth, viewHeight);
         }
 
         if (debugHitbox
+                && !gameOver
                 && sceneLoader != null
                 && sceneLoader.getWorld() != null) {
+
             box2dDebugRenderer.render(
                 sceneLoader.getWorld(),
                 camera.combined
             );
         }
+
+        if (gameOver) {
+            renderGameOverOverlay(viewWidth, viewHeight);
+            handleGameOverInput();
+        }
     }
 
     // --------------------------------------------------
-    // MOB HEALTH BARS
+    // ENEMY HEALTH BARS
     // --------------------------------------------------
 
-    private void renderMobHealthBars() {
+    private void renderEnemyHealthBars() {
+        if (enemies.isEmpty()) {
+            return;
+        }
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
         for (Enemy enemy : enemies) {
-            // The boss has its own dedicated health bar.
-            if (enemy == bossEnemy
-                    || enemy.isDestroyed()
-                    || enemy.isBodyDisposed()) {
+            if (enemy.isDestroyed() || enemy.isBodyDisposed()) {
                 continue;
             }
 
-            float barWidth = Math.max(
-                MOB_BAR_MIN_WIDTH,
-                boundsWidthForHealthBar(enemy)
-            );
-
-            float barHeight = MOB_BAR_HEIGHT;
-
-            float barX = enemy.bounds.x
-                + (enemy.bounds.width - barWidth) / 2f;
-
-            float barY = enemy.bounds.y
-                + enemy.bounds.height + 12f;
+            float barWidth = enemy.bounds.width;
+            float barHeight = 3f;
+            float barX = enemy.bounds.x;
+            float barY = enemy.bounds.y + enemy.bounds.height + 5f;
 
             float hpPercent = enemy.getMaxHealth() > 0
                 ? (float) enemy.getHealth() / enemy.getMaxHealth()
@@ -545,24 +641,16 @@ public class Page1Screen implements Screen {
 
             hpPercent = Math.max(0f, Math.min(1f, hpPercent));
 
-            // Background.
-            shapeRenderer.setColor(0.10f, 0.10f, 0.10f, 1f);
+            shapeRenderer.setColor(0.12f, 0.12f, 0.12f, 1f);
             shapeRenderer.rect(barX, barY, barWidth, barHeight);
 
-            // HP color changes with remaining health.
             if (hpPercent > 0f) {
                 if (hpPercent > 0.5f) {
-                    shapeRenderer.setColor(
-                        0.15f, 0.85f, 0.2f, 1f
-                    );
+                    shapeRenderer.setColor(0.12f, 0.85f, 0.2f, 1f);
                 } else if (hpPercent > 0.25f) {
-                    shapeRenderer.setColor(
-                        1f, 0.65f, 0.05f, 1f
-                    );
+                    shapeRenderer.setColor(1f, 0.65f, 0.05f, 1f);
                 } else {
-                    shapeRenderer.setColor(
-                        0.9f, 0.12f, 0.12f, 1f
-                    );
+                    shapeRenderer.setColor(0.9f, 0.1f, 0.1f, 1f);
                 }
 
                 shapeRenderer.rect(
@@ -573,134 +661,404 @@ public class Page1Screen implements Screen {
                 );
             }
         }
-    }
 
-    private float boundsWidthForHealthBar(Enemy enemy) {
-        return enemy.bounds.width * 1.2f;
-    }
-
-    private void renderMobHealthLabels() {
-        if (hudFont == null || batch == null) {
-            return;
-        }
+        shapeRenderer.end();
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        hudFont.setColor(1f, 1f, 1f, 1f);
-
         for (Enemy enemy : enemies) {
-            // Keep the boss health display separate.
-            if (enemy == bossEnemy
-                    || enemy.isDestroyed()
-                    || enemy.isBodyDisposed()) {
+            if (enemy.isDestroyed() || enemy.isBodyDisposed()) {
                 continue;
             }
 
-            String hpText = enemy.getHealth() + " HP";
+            String hpText =
+                enemy.getHealth() + " / " + enemy.getMaxHealth();
 
-            GlyphLayout layout = new GlyphLayout();
-            layout.setText(hudFont, hpText);
+            GlyphLayout layout = new GlyphLayout(hudFont, hpText);
 
-            float x = enemy.bounds.x
+            float textX = enemy.bounds.x
                 + enemy.bounds.width / 2f
                 - layout.width / 2f;
 
-            float y = enemy.bounds.y
-                + enemy.bounds.height + 25f;
+            float textY = enemy.bounds.y
+                + enemy.bounds.height + 14f;
 
-            hudFont.draw(batch, hpText, x, y);
+            hudFont.setColor(Color.WHITE);
+            hudFont.draw(batch, hpText, textX, textY);
         }
 
         batch.end();
     }
 
     // --------------------------------------------------
-    // PLAYER HUD
+    // PLAYER DEATH / GAME OVER
     // --------------------------------------------------
 
-    private void renderPlayerHealth(
-            PlayerState player,
+    private void handlePlayerDeath(PlayerState player) {
+        if (player == null || !player.isDead() || gameOver) {
+            return;
+        }
+
+        deathCount++;
+
+        if (deathCount >= MAX_DEATHS) {
+            gameOver = true;
+
+            Gdx.input.setCursorCatched(false);
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+            return;
+        }
+
+        player.respawn();
+        player.x = PhysicsConfig.PLAYER_SPAWN_X;
+        player.y = PhysicsConfig.PLAYER_SPAWN_Y;
+        player.velocityY = 0f;
+        player.isGrounded = false;
+        player.canDoubleJump = true;
+        player.movementState = PlayerState.MovementState.IDLE;
+        player.jumpStartY = player.y;
+        player.peakY = player.y;
+    }
+
+    private void renderGameOverOverlay(
             float viewWidth,
             float viewHeight
     ) {
-        float left =
-            camera.position.x - viewWidth / 2f + 12f;
+        float centerX = camera.position.x;
+        float centerY = camera.position.y;
+        float left = centerX - viewWidth / 2f;
+        float bottom = centerY - viewHeight / 2f;
 
-        float top =
-            camera.position.y + viewHeight / 2f - 16f;
+        retryButtonBounds.set(
+            centerX - 48f,
+            centerY - 12f,
+            96f,
+            22f
+        );
 
-        float barWidth = 65f;
-        float barHeight = 4f;
+        menuButtonBounds.set(
+            centerX - 48f,
+            centerY - 42f,
+            96f,
+            22f
+        );
 
-        float hpPercentage = player.maxHealth > 0
-            ? (float) player.health / player.maxHealth
-            : 0f;
-
-        hpPercentage = Math.max(0f, Math.min(1f, hpPercentage));
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(
+            GL20.GL_SRC_ALPHA,
+            GL20.GL_ONE_MINUS_SRC_ALPHA
+        );
 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        shapeRenderer.setColor(0.12f, 0.12f, 0.12f, 1f);
+        shapeRenderer.setColor(0f, 0f, 0f, 0.78f);
+        shapeRenderer.rect(left, bottom, viewWidth, viewHeight);
+
+        shapeRenderer.setColor(0.65f, 0.08f, 0.08f, 1f);
         shapeRenderer.rect(
-            left, top - barHeight, barWidth, barHeight
+            retryButtonBounds.x,
+            retryButtonBounds.y,
+            retryButtonBounds.width,
+            retryButtonBounds.height
         );
 
-        if (hpPercentage > 0f) {
-            if (hpPercentage > 0.5f) {
-                shapeRenderer.setColor(0.15f, 0.85f, 0.2f, 1f);
-            } else if (hpPercentage > 0.25f) {
-                shapeRenderer.setColor(1f, 0.65f, 0.05f, 1f);
-            } else {
-                shapeRenderer.setColor(0.9f, 0.12f, 0.12f, 1f);
-            }
-
-            shapeRenderer.rect(
-                left,
-                top - barHeight,
-                barWidth * hpPercentage,
-                barHeight
-            );
-        }
+        shapeRenderer.setColor(0.12f, 0.30f, 0.62f, 1f);
+        shapeRenderer.rect(
+            menuButtonBounds.x,
+            menuButtonBounds.y,
+            menuButtonBounds.width,
+            menuButtonBounds.height
+        );
 
         shapeRenderer.end();
-
-        int ammo = Math.max(0, player.weaponState.currentAmmo);
-        int maxAmmo = player.weaponState.activeWeapon.maxAmmo;
+        Gdx.gl.glDisable(GL20.GL_BLEND);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        hudFont.setColor(1f, 1f, 1f, 1f);
+        hudFont.setColor(Color.WHITE);
+        drawCenteredText("GAME OVER", centerX, centerY + 25f);
 
-        hudFont.draw(
-            batch,
-            "HP: " + player.health + " / " + player.maxHealth,
-            left,
-            top + 1f
+        drawCenteredText(
+            "You died " + deathCount + " times",
+            centerX,
+            centerY + 10f
         );
 
-        hudFont.draw(
-            batch,
-            "AMMO: " + ammo + " / " + maxAmmo,
-            left,
-            top - 15f
+        drawCenteredText(
+            "RETRY",
+            centerX,
+            retryButtonBounds.y + 14f
         );
 
-        if (player.weaponState.isReloading) {
-            hudFont.draw(
-                batch,
-                "RELOADING...",
-                left,
-                top - 27f
-            );
-        }
+        drawCenteredText(
+            "MENU",
+            centerX,
+            menuButtonBounds.y + 14f
+        );
 
         batch.end();
     }
 
+    private void drawCenteredText(
+            String text,
+            float centerX,
+            float y
+    ) {
+        GlyphLayout layout = new GlyphLayout(hudFont, text);
+
+        hudFont.draw(
+            batch,
+            text,
+            centerX - layout.width / 2f,
+            y
+        );
+    }
+
+    private void handleGameOverInput() {
+        Gdx.input.setCursorCatched(false);
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+
+        if (!Gdx.input.justTouched()) {
+            return;
+        }
+
+        gameOverTouch.set(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(gameOverTouch);
+
+        if (retryButtonBounds.contains(gameOverTouch)) {
+            dispose();
+            game.setScreen(new Page1Screen(game));
+        } else if (menuButtonBounds.contains(gameOverTouch)) {
+            dispose();
+            game.setScreen(new MainMenuScreen(game));
+        }
+    }
+
     // --------------------------------------------------
+    // DOOM-STYLE PLAYER HUD
+    // --------------------------------------------------
+
+    private void renderDoomHud(PlayerState player) {
+        if (player == null || batch == null || shapeRenderer == null) {
+            return;
+        }
+
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
+
+        hudCamera.setToOrtho(false, screenWidth, screenHeight);
+        hudCamera.update();
+
+        float hudHeight = Math.max(105f, screenHeight * 0.19f);
+        float centerX = screenWidth / 2f;
+
+        float healthPercent = player.maxHealth > 0
+            ? (float) player.health / player.maxHealth
+            : 0f;
+
+        healthPercent = Math.max(0f, Math.min(1f, healthPercent));
+
+        int ammo = Math.max(0, player.weaponState.currentAmmo);
+        int maxAmmo = player.weaponState.activeWeapon.maxAmmo;
+
+        String weaponName = player.weaponState.activeWeapon.displayName;
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(
+            GL20.GL_SRC_ALPHA,
+            GL20.GL_ONE_MINUS_SRC_ALPHA
+        );
+
+        shapeRenderer.setProjectionMatrix(hudCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        shapeRenderer.setColor(0.025f, 0.025f, 0.035f, 0.98f);
+        shapeRenderer.rect(0f, 0f, screenWidth, hudHeight);
+
+        shapeRenderer.setColor(0.35f, 0.30f, 0.22f, 1f);
+        shapeRenderer.rect(0f, hudHeight - 4f, screenWidth, 4f);
+
+        float leftPanelX = screenWidth * 0.04f;
+        float healthBarWidth = screenWidth * 0.18f;
+        float healthBarHeight = 13f;
+        float healthBarY = hudHeight * 0.55f;
+
+        shapeRenderer.setColor(0.13f, 0.10f, 0.10f, 1f);
+        shapeRenderer.rect(
+            leftPanelX,
+            healthBarY,
+            healthBarWidth,
+            healthBarHeight
+        );
+
+        if (healthPercent > 0f) {
+            if (healthPercent > 0.5f) {
+                shapeRenderer.setColor(0.1f, 0.75f, 0.18f, 1f);
+            } else if (healthPercent > 0.25f) {
+                shapeRenderer.setColor(0.95f, 0.55f, 0.05f, 1f);
+            } else {
+                shapeRenderer.setColor(0.9f, 0.08f, 0.08f, 1f);
+            }
+
+            shapeRenderer.rect(
+                leftPanelX,
+                healthBarY,
+                healthBarWidth * healthPercent,
+                healthBarHeight
+            );
+        }
+
+        float portraitSize = Math.min(88f, hudHeight * 0.75f);
+        float portraitX = centerX - portraitSize / 2f;
+        float portraitY = hudHeight * 0.08f;
+
+        shapeRenderer.setColor(0.20f, 0.18f, 0.15f, 1f);
+        shapeRenderer.rect(
+            portraitX - 5f,
+            portraitY - 5f,
+            portraitSize + 10f,
+            portraitSize + 10f
+        );
+
+        shapeRenderer.setColor(0.08f, 0.08f, 0.08f, 1f);
+        shapeRenderer.rect(
+            portraitX,
+            portraitY,
+            portraitSize,
+            portraitSize
+        );
+
+        shapeRenderer.setColor(0.68f, 0.48f, 0.34f, 1f);
+        shapeRenderer.circle(
+            centerX,
+            portraitY + portraitSize * 0.57f,
+            portraitSize * 0.27f
+        );
+
+        shapeRenderer.setColor(0.12f, 0.10f, 0.10f, 1f);
+        shapeRenderer.rect(
+            centerX - portraitSize * 0.25f,
+            portraitY + portraitSize * 0.29f,
+            portraitSize * 0.50f,
+            portraitSize * 0.12f
+        );
+
+        float rightPanelX = screenWidth * 0.76f;
+        float ammoBarWidth = screenWidth * 0.19f;
+
+        float ammoPercent = maxAmmo > 0
+            ? (float) ammo / maxAmmo
+            : 0f;
+
+        ammoPercent = Math.max(0f, Math.min(1f, ammoPercent));
+
+        shapeRenderer.setColor(0.13f, 0.10f, 0.10f, 1f);
+        shapeRenderer.rect(
+            rightPanelX,
+            healthBarY,
+            ammoBarWidth,
+            healthBarHeight
+        );
+
+        if (ammoPercent > 0f) {
+            shapeRenderer.setColor(0.88f, 0.62f, 0.12f, 1f);
+            shapeRenderer.rect(
+                rightPanelX,
+                healthBarY,
+                ammoBarWidth * ammoPercent,
+                healthBarHeight
+            );
+        }
+
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+
+        hudFont.setColor(1f, 0.9f, 0.65f, 1f);
+        hudFont.draw(batch, "HEALTH", leftPanelX, healthBarY + 33f);
+
+        hudFont.draw(
+            batch,
+            player.health + " / " + player.maxHealth,
+            leftPanelX,
+            healthBarY - 9f
+        );
+
+        hudFont.draw(
+            batch,
+            "DEATHS " + deathCount + " / " + MAX_DEATHS,
+            leftPanelX,
+            18f
+        );
+
+        hudFont.draw(batch, "AMMO", rightPanelX, healthBarY + 33f);
+
+        hudFont.draw(
+            batch,
+            ammo + " / " + maxAmmo,
+            rightPanelX,
+            healthBarY - 9f
+        );
+
+        GlyphLayout weaponLayout = new GlyphLayout(hudFont, weaponName);
+
+        hudFont.draw(
+            batch,
+            weaponName,
+            centerX - weaponLayout.width / 2f,
+            hudHeight - 6f
+        );
+
+        Texture weaponTexture =
+            hudWeaponTextures.get(player.weaponState.activeWeapon);
+
+        if (weaponTexture != null) {
+            float weaponWidth = Math.min(112f, screenWidth * 0.13f);
+            float weaponHeight = weaponWidth * 0.75f;
+
+            batch.draw(
+                weaponTexture,
+                screenWidth - weaponWidth - 24f,
+                15f,
+                weaponWidth,
+                weaponHeight
+            );
+        }
+
+        if (player.weaponState.isReloading) {
+            GlyphLayout reloadLayout =
+                new GlyphLayout(hudFont, "RELOADING...");
+
+            hudFont.setColor(1f, 0.25f, 0.15f, 1f);
+
+            hudFont.draw(
+                batch,
+                "RELOADING...",
+                centerX - reloadLayout.width / 2f,
+                hudHeight * 0.45f
+            );
+        }
+
+        // Currency display.
+        hudFont.setColor(1f, 0.85f, 0.2f, 1f);
+        hudFont.draw(
+            batch,
+            "CASH: $" + currency,
+            centerX - 45f,
+            hudHeight + 22f
+        );
+
+        batch.end();
+
+        batch.setProjectionMatrix(camera.combined);
+        shapeRenderer.setProjectionMatrix(camera.combined);
+    }
+        // --------------------------------------------------
     // WAVE HUD
     // --------------------------------------------------
 
@@ -708,38 +1066,83 @@ public class Page1Screen implements Screen {
             float viewWidth,
             float viewHeight
     ) {
-        String status;
-
-        if (bossDefeated) {
-            status = "BOSS DEFEATED!";
-        } else if (bossSpawned) {
-            status = "BOSS FIGHT!";
-        } else if (waitingForNextWave) {
-            status = "WAVE CLEARED - NEXT WAVE SOON";
-        } else {
-            status = "WAVE " + currentWave
-                + " / " + TOTAL_WAVES
-                + "   KILLS: " + totalKills
-                + " / " + KILLS_REQUIRED_FOR_BOSS;
-        }
-
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        GlyphLayout layout = new GlyphLayout();
-        layout.setText(hudFont, status);
+        hudFont.setColor(Color.WHITE);
 
-        float x = camera.position.x - layout.width / 2f;
-        float y = camera.position.y + viewHeight / 2f - 16f;
+        String waveText = bossSpawned
+            ? "BOSS FIGHT"
+            : "WAVE " + currentWave + " / " + TOTAL_WAVES;
 
-        hudFont.setColor(1f, 1f, 1f, 1f);
-        hudFont.draw(batch, status, x, y);
+        GlyphLayout layout = new GlyphLayout(hudFont, waveText);
+
+        hudFont.draw(
+            batch,
+            waveText,
+            camera.position.x - layout.width / 2f,
+            camera.position.y + viewHeight / 2f - 20f
+        );
+
+        String currencyText = "CURRENCY: $" + currency;
+
+        hudFont.draw(
+            batch,
+            currencyText,
+            camera.position.x - viewWidth / 2f + 12f,
+            camera.position.y + viewHeight / 2f - 20f
+        );
+
+        if (shopOpen) {
+            float secondsLeft = Math.max(0f, waveDelayTimer);
+
+            String timerText =
+                "SHOP BREAK: " + (int) Math.ceil(secondsLeft) + "s";
+
+            GlyphLayout timerLayout = new GlyphLayout(hudFont, timerText);
+
+            hudFont.setColor(1f, 0.85f, 0.2f, 1f);
+
+            hudFont.draw(
+                batch,
+                timerText,
+                camera.position.x - timerLayout.width / 2f,
+                camera.position.y + viewHeight / 2f - 42f
+            );
+
+            String shopControls =
+                "[1] Shotgun $200    [2] AK-47 $180    [3] Pistol";
+
+            GlyphLayout controlsLayout =
+                new GlyphLayout(hudFont, shopControls);
+
+            hudFont.draw(
+                batch,
+                shopControls,
+                camera.position.x - controlsLayout.width / 2f,
+                camera.position.y + viewHeight / 2f - 60f
+            );
+
+            if (!shopMessage.isEmpty()) {
+                GlyphLayout messageLayout =
+                    new GlyphLayout(hudFont, shopMessage);
+
+                hudFont.setColor(Color.WHITE);
+
+                hudFont.draw(
+                    batch,
+                    shopMessage,
+                    camera.position.x - messageLayout.width / 2f,
+                    camera.position.y + viewHeight / 2f - 78f
+                );
+            }
+        }
 
         batch.end();
     }
 
     // --------------------------------------------------
-    // BOSS HEALTH BAR
+    // BOSS HEALTH
     // --------------------------------------------------
 
     private void renderBossHealth(
@@ -747,93 +1150,73 @@ public class Page1Screen implements Screen {
             float viewWidth,
             float viewHeight
     ) {
-        if (!bossSpawned
-                || bossEnemy == null
-                || bossEnemy.isDestroyed()) {
+        if (!bossSpawned) {
             return;
         }
 
-        float enemyCenterX =
-            bossEnemy.bounds.x + bossEnemy.bounds.width / 2f;
+        Enemy boss = null;
 
-        float enemyCenterY =
-            bossEnemy.bounds.y + bossEnemy.bounds.height / 2f;
+        for (Enemy enemy : enemies) {
+            if (enemy instanceof TargetDummy) {
+                boss = enemy;
+                break;
+            }
+        }
 
-        float dx = player.x - enemyCenterX;
-        float dy = player.y - enemyCenterY;
-
-        if (dx * dx + dy * dy
-                > BOSS_BAR_SHOW_DISTANCE * BOSS_BAR_SHOW_DISTANCE) {
+        if (boss == null) {
             return;
         }
 
-        float barWidth = Math.min(180f, viewWidth * 0.55f);
-        float barHeight = 5f;
+        float barWidth = Math.min(400f, viewWidth * 0.6f);
+        float barHeight = 14f;
 
         float barX = camera.position.x - barWidth / 2f;
-        float barY = camera.position.y + viewHeight / 2f - 35f;
+        float barY = camera.position.y + viewHeight / 2f - 75f;
 
-        float hpPercent = bossEnemy.getMaxHealth() > 0
-            ? (float) bossEnemy.getHealth()
-                / bossEnemy.getMaxHealth()
+        float healthPercent = boss.getMaxHealth() > 0
+            ? (float) boss.getHealth() / boss.getMaxHealth()
             : 0f;
 
-        hpPercent = Math.max(0f, Math.min(1f, hpPercent));
+        healthPercent = Math.max(0f, Math.min(1f, healthPercent));
 
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        shapeRenderer.setColor(0.05f, 0.02f, 0.08f, 1f);
-        shapeRenderer.rect(
-            barX - 2f, barY - 2f,
-            barWidth + 4f, barHeight + 4f
-        );
-
-        shapeRenderer.setColor(0.18f, 0.08f, 0.18f, 1f);
+        shapeRenderer.setColor(0.12f, 0.02f, 0.02f, 1f);
         shapeRenderer.rect(barX, barY, barWidth, barHeight);
 
-        if (hpPercent > 0f) {
-            shapeRenderer.setColor(0.65f, 0.08f, 0.35f, 1f);
-            shapeRenderer.rect(
-                barX, barY, barWidth * hpPercent, barHeight
-            );
-        }
+        shapeRenderer.setColor(0.85f, 0.05f, 0.05f, 1f);
+        shapeRenderer.rect(
+            barX,
+            barY,
+            barWidth * healthPercent,
+            barHeight
+        );
 
         shapeRenderer.end();
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        hudFont.setColor(1f, 1f, 1f, 1f);
+        String bossText =
+            "BOSS: " + boss.getHealth() + " / " + boss.getMaxHealth();
 
-        String bossName = "BOSS";
-        String healthText =
-            bossEnemy.getHealth() + " / " + bossEnemy.getMaxHealth();
+        GlyphLayout layout = new GlyphLayout(hudFont, bossText);
 
-        GlyphLayout layout = new GlyphLayout();
-        layout.setText(hudFont, bossName);
+        hudFont.setColor(Color.WHITE);
 
         hudFont.draw(
             batch,
-            bossName,
+            bossText,
             camera.position.x - layout.width / 2f,
-            barY + barHeight + 10f
-        );
-
-        layout.setText(hudFont, healthText);
-
-        hudFont.draw(
-            batch,
-            healthText,
-            camera.position.x - layout.width / 2f,
-            barY - 5f
+            barY + barHeight + 18f
         );
 
         batch.end();
     }
 
     // --------------------------------------------------
-    // SCREEN LIFECYCLE
+    // RESIZE
     // --------------------------------------------------
 
     @Override
@@ -841,7 +1224,16 @@ public class Page1Screen implements Screen {
         if (viewport != null) {
             viewport.update(width, height, true);
         }
+
+        if (hudCamera != null) {
+            hudCamera.setToOrtho(false, width, height);
+            hudCamera.update();
+        }
     }
+
+    // --------------------------------------------------
+    // PAUSE / RESUME
+    // --------------------------------------------------
 
     @Override
     public void pause() {
@@ -855,22 +1247,20 @@ public class Page1Screen implements Screen {
     public void hide() {
     }
 
+    // --------------------------------------------------
+    // DISPOSE
+    // --------------------------------------------------
+
     @Override
     public void dispose() {
-        if (sceneLoader != null
-                && sceneLoader.getWorld() != null
-                && !sceneLoader.getWorld().isLocked()) {
-            for (Enemy enemy : enemies) {
-                enemy.disposeBody();
-            }
-        }
-
-        enemies.clear();
-        bossEnemy = null;
-
         if (gameplaySession != null) {
             gameplaySession.dispose();
             gameplaySession = null;
+        }
+
+        if (sceneLoader != null) {
+            sceneLoader.dispose();
+            sceneLoader = null;
         }
 
         if (background != null) {
@@ -898,9 +1288,12 @@ public class Page1Screen implements Screen {
             hudFont = null;
         }
 
-        if (sceneLoader != null) {
-            sceneLoader.dispose();
-            sceneLoader = null;
+        for (Texture texture : hudWeaponTextures.values()) {
+            if (texture != null) {
+                texture.dispose();
+            }
         }
+
+        hudWeaponTextures.clear();
     }
-}
+}   
