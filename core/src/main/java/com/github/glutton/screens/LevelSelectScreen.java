@@ -30,6 +30,9 @@ public class LevelSelectScreen implements Screen {
 	private DimensionsComponent exitDimensions;
 	private TintComponent exitHighlightTint;
 
+	private TransformComponent bookGuiTransform;
+	private TransformComponent rightPageTransform;
+
 	private TransformComponent nextPageTransform;
 	private DimensionsComponent nextPageDimensions;
 	private TintComponent nextPageHighlightTint;
@@ -39,13 +42,12 @@ public class LevelSelectScreen implements Screen {
 
 	private final Vector3 mouseVector = new Vector3();
 
-	public LevelSelectScreen(GluttonGame game) {
-		this.game = game;
+	private boolean isValid(ItemWrapper w) {
+		return w != null && w.getEntity() >= 0;
 	}
 
-	@Override
-	public void show() {
-		game.playMenuBgm();
+	public LevelSelectScreen(GluttonGame game) {
+		this.game = game;
 
 		viewport = new StretchViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
@@ -57,36 +59,50 @@ public class LevelSelectScreen implements Screen {
 		rootWrapper = new ItemWrapper(sceneLoader.getRoot(), sceneLoader.getEngine());
 
 		ItemWrapper exitBtn = rootWrapper.getChild("ExitButton");
-		if (exitBtn != null) {
+		if (isValid(exitBtn)) {
 			int entity = exitBtn.getEntity();
 			exitTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
 			exitDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
 		}
 
 		ItemWrapper exitHighlightBtn = rootWrapper.getChild("HIGHLIGHTEDExitButton");
-		if (exitHighlightBtn != null) {
+		if (isValid(exitHighlightBtn)) {
 			exitHighlightTint = ComponentRetriever.get(exitHighlightBtn.getEntity(), TintComponent.class, sceneLoader.getEngine());
 			if (exitHighlightTint != null) exitHighlightTint.color.a = 0f;
 		}
 
-		ItemWrapper nextPageBtn = rootWrapper.getChild("Next_Page");
-		if (nextPageBtn != null) {
-			int entity = nextPageBtn.getEntity();
-			nextPageTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
-			nextPageDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
-		}
+		ItemWrapper bookGui = rootWrapper.getChild("BOOKGUI");
+		if (isValid(bookGui)) {
+			bookGuiTransform = ComponentRetriever.get(bookGui.getEntity(), TransformComponent.class, sceneLoader.getEngine());
+			
+			ItemWrapper rightPage = bookGui.getChild("RightPage");
+			if (isValid(rightPage)) {
+				rightPageTransform = ComponentRetriever.get(rightPage.getEntity(), TransformComponent.class, sceneLoader.getEngine());
 
-		ItemWrapper nextPageHighlightBtn = rootWrapper.getChild("HIGHLIGHTEDNext_Page");
-		if (nextPageHighlightBtn != null) {
-			nextPageHighlightTint = ComponentRetriever.get(nextPageHighlightBtn.getEntity(), TintComponent.class, sceneLoader.getEngine());
-			if (nextPageHighlightTint != null) nextPageHighlightTint.color.a = 0f;
-		}
+				ItemWrapper playBtn = rightPage.getChild("Play_Button");
+				if (isValid(playBtn)) {
+					int entity = playBtn.getEntity();
+					playTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
+					playDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
+				}
 
-		ItemWrapper playBtn = rootWrapper.getChild("Play_Button");
-		if (playBtn != null) {
-			int entity = playBtn.getEntity();
-			playTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
-			playDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
+				ItemWrapper nextPageComposite = rightPage.getChild("NextPage");
+				if (isValid(nextPageComposite)) {
+					ItemWrapper nextPageBtn = nextPageComposite.getChild("Next_Page");
+					if (isValid(nextPageBtn)) {
+						int entity = nextPageBtn.getEntity();
+						nextPageTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
+						nextPageDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
+					}
+				}
+			}
+		}
+	}
+
+	@Override
+	public void show() {
+		if (viewport != null) {
+			viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 		}
 	}
 
@@ -106,39 +122,39 @@ public class LevelSelectScreen implements Screen {
 		viewport.unproject(mouseVector);
 
 		if (exitTransform != null && exitDimensions != null) {
-			Rectangle bounds = getEntityBounds(exitTransform, exitDimensions);
+			Rectangle bounds = getEntityBounds(exitTransform, exitDimensions, null, null);
 			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
 			if (exitHighlightTint != null) exitHighlightTint.color.a = isHovered ? 1f : 0f;
-			if (isHovered && Gdx.input.justTouched()) game.setScreen(new MainMenuScreen(game));
-		}
-
-		if (nextPageTransform != null && nextPageDimensions != null) {
-			Rectangle bounds = getEntityBounds(nextPageTransform, nextPageDimensions);
-			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
-			if (nextPageHighlightTint != null) nextPageHighlightTint.color.a = isHovered ? 1f : 0f;
+			if (isHovered && Gdx.input.justTouched()) {
+				game.showMainMenu();
+			}
 		}
 
 		if (playTransform != null && playDimensions != null) {
-			Rectangle bounds = getEntityBounds(playTransform, playDimensions);
+			Rectangle bounds = getEntityBounds(playTransform, playDimensions, bookGuiTransform, rightPageTransform);
 			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
 			if (isHovered && Gdx.input.justTouched()) {
-				game.playLevelBgm("audio/bgm/page1_theme.mp3");
-				game.setScreen(new Page1Screen(game));
+				game.showPage1();
 			}
 		}
 	}
 
-	private Rectangle getEntityBounds(TransformComponent transform, DimensionsComponent dimensions) {
+	private Rectangle getEntityBounds(TransformComponent transform, DimensionsComponent dimensions, TransformComponent p1, TransformComponent p2) {
+		float p1X = (p1 != null) ? p1.x : 0f;
+		float p1Y = (p1 != null) ? p1.y : 0f;
+		float p2X = (p2 != null) ? p2.x : 0f;
+		float p2Y = (p2 != null) ? p2.y : 0f;
+
+		float x = p1X + p2X + transform.x - (transform.originX * (transform.scaleX - 1));
+		float y = p1Y + p2Y + transform.y - (transform.originY * (transform.scaleY - 1));
 		float width = dimensions.width * transform.scaleX;
 		float height = dimensions.height * transform.scaleY;
-		float x = transform.x - (transform.originX * (transform.scaleX - 1));
-		float y = transform.y - (transform.originY * (transform.scaleY - 1));
 		return new Rectangle(x, y, width, height);
 	}
 
 	@Override
 	public void resize(int width, int height) {
-		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+		viewport.update(width, height, true);
 	}
 
 	@Override public void pause() {}

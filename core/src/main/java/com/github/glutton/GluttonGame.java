@@ -4,56 +4,67 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.github.glutton.screens.MainMenuScreen;
+import com.github.glutton.screens.LevelSelectScreen;
+import com.github.glutton.screens.Page1Screen;
 
 public class GluttonGame extends Game {
+    private MainMenuScreen mainMenuScreen;
+    private LevelSelectScreen levelSelectScreen;
+    private Page1Screen page1Screen;
+    private Music menuMusic;
 
-	private Music menuBgm;
+    @Override
+    public void create() {
+        mainMenuScreen = new MainMenuScreen(this);
+        levelSelectScreen = new LevelSelectScreen(this);
+        setScreen(mainMenuScreen);
+        playMenuBgm();
+    }
 
-	@Override
-	public void create() {
-		playMenuBgm();
-		setScreen(new MainMenuScreen(this));
-	}
+    public void showMainMenu() {
+        setScreen(mainMenuScreen);
+        playMenuBgm();
+    }
 
-	public void playMenuBgm() {
-		if (menuBgm == null && Gdx.files.internal("UI/Menu/BGM.wav").exists()) {
-			menuBgm = Gdx.audio.newMusic(Gdx.files.internal("UI/Menu/BGM.wav"));
-			menuBgm.setLooping(true);
-		}
-		if (menuBgm != null && !menuBgm.isPlaying()) {
-			menuBgm.play();
-		}
-	}
+    public void showLevelSelect() {
+        setScreen(levelSelectScreen);
+    }
 
-	public void stopMenuBgm() {
-		if (menuBgm != null && menuBgm.isPlaying()) {
-			menuBgm.stop();
-		}
-	}
+    public void showPage1() {
+        if (page1Screen == null) {
+            page1Screen = new Page1Screen(this);
+        }
+        playLevelBgm("audio/bgm/page1_theme.mp3");
+        setScreen(page1Screen);
+    }
 
-	@Override
-	public void dispose() {
-		super.dispose();
-		if (menuBgm != null) {
-			menuBgm.dispose();
-		}
-	}
+    public void playMenuBgm() {
+        if (menuMusic == null) {
+            try {
+                menuMusic = Gdx.audio.newMusic(Gdx.files.internal("ui/Menu/BGM.wav"));
+                menuMusic.setLooping(true);
+            } catch (Exception e) {
+                Gdx.app.error("Audio", "Failed to load menu BGM from ui/Menu/BGM.wav", e);
+                return;
+            }
+        }
+        if (!menuMusic.isPlaying()) {
+            menuMusic.play();
+        }
+    }
 
-	public void playLevelBgm(String musicPath) {
-		if (musicPath != null && Gdx.files.internal(musicPath).exists()) {
-			// Stop menu music if playing
-			if (menuBgm != null && menuBgm.isPlaying()) {
-				menuBgm.stop();
-			}
-			// Load and play new track
-			Music levelBgm = Gdx.audio.newMusic(Gdx.files.internal(musicPath));
-			levelBgm.setLooping(true);
-			levelBgm.play();
-		} else {
-			// Silence: stop existing music if track doesn't exist
-			if (menuBgm != null && menuBgm.isPlaying()) {
-				menuBgm.stop();
-			}
-		}
-	}
+    public void playLevelBgm(String path) {
+        if (menuMusic != null && menuMusic.isPlaying()) {
+            menuMusic.stop();
+        }
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        if (menuMusic != null) {
+            menuMusic.dispose();
+            menuMusic = null;
+        }
+    }
 }

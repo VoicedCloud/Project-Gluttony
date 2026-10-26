@@ -1,5 +1,6 @@
 package com.github.glutton.lwjgl3;
 
+import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.glutils.HdpiMode;
@@ -13,10 +14,14 @@ public class Lwjgl3Launcher {
 
 		Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
 		configuration.setTitle("Gluttony");
-		configuration.setDecorated(false);
+		
+		// Borderless Fullscreen: matches monitor resolution with no window borders
+		Graphics.DisplayMode displayMode = Lwjgl3ApplicationConfiguration.getDisplayMode();
+		configuration.setWindowedMode(displayMode.width, displayMode.height);
+		configuration.setDecorated(false); // Removes the window title bar and borders
+		
 		configuration.setResizable(false);
 		configuration.setHdpiMode(HdpiMode.Pixels);
-		configuration.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
 		configuration.useVsync(true);
 
 		new Lwjgl3Application(new GluttonGame(), configuration);
