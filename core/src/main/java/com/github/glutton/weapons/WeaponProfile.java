@@ -3,7 +3,7 @@ package com.github.glutton.weapons;
 import com.badlogic.gdx.audio.Sound;
 
 public enum WeaponProfile {
-    PISTOL("Glock P80", 12, 10, 500f, 3, 150, 2040, false, 1.0f, 1,
+    PISTOL("Glock P80", 12, 30, 500f, 3, 150, 2040, false, 1.0f, 1,
             "sprites/weapons/Glock - P80.png",
             "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[SHOOT WITH CASING AND MUZZLE FLASH] Glock - P80.png",
             "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[RELOAD] Glock - P80.png",
@@ -17,7 +17,7 @@ public enum WeaponProfile {
                 new ReloadMilestone(0.88f, "audio/weapon/Snake's Authentic Gun Sounds/& More/Pistol/WAV/9mm Pistol Slide Release.wav")
             }
     ),
-    ASSAULT_RIFLE("AK-47", 30, 8, 5500f, 15, 110, 3000, true, 3.0f, 1,
+    ASSAULT_RIFLE("AK-47", 30, 15, 5500f, 15, 110, 3000, true, 3.0f, 1,
             "sprites/weapons/01 - Individual sprites/Guns/AK 47 [96x48].png",
             "sprites/weapons/02 - Sprite sheets/AK 47 [96x48]/[SHOOT WITH CASING AND MUZZLE FLASH] AK 47.png",
             "sprites/weapons/02 - Sprite sheets/AK 47 [96x48]/[RELOAD] AK 47.png",
@@ -29,7 +29,7 @@ public enum WeaponProfile {
                 new ReloadMilestone(.725f, "audio/weapon/Snake's Authentic Gun Sounds/Reloads, Cycling & More/WAV/AK Reload Part 2 WAV.wav"),
                 new ReloadMilestone(.90f, "audio/weapon/Snake's Authentic Gun Sounds/Reloads, Cycling & More/WAV/AK Rack WAV.wav"),}
     ),
-    SHOTGUN("Shotgun", 6, 8, 4000f, 18, 750, 2200, false, 12.0f, 8,
+    SHOTGUN("Shotgun", 6, 10, 4000f, 18, 750, 2200, false, 12.0f, 8,
             "sprites/weapons/01 - Individual sprites/Guns/[design]Shotgun_V1.02.png",
             "sprites/weapons/02 - Sprite sheets/Shotgun_V1.00/Weapon/[SHOOTING_CHAMBER_OPEN] Shotgun_V1.02.png",
             "sprites/weapons/02 - Sprite sheets/Shotgun_V1.00/Weapon/[RELOAD] Shotgun_V1.02 - Rreloading_01.png",

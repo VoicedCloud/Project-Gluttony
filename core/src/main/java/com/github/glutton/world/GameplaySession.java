@@ -66,6 +66,9 @@ public class GameplaySession {
     public PlayerState getPlayerState() {
         return playerState;
     }
+    public PlayerController getPlayerController() {
+    return playerController;
+}
 
     public PlayerGunRenderer getGunRenderer() {
         return gunRenderer;

@@ -32,6 +32,7 @@ import com.github.glutton.world.PhysicsConfig;
 
 import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
+import com.github.glutton.player.PlayerController;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -865,6 +866,26 @@ public class Page1Screen implements Screen {
         int maxAmmo = player.weaponState.activeWeapon.maxAmmo;
 
         String weaponName = player.weaponState.activeWeapon.displayName;
+        
+       PlayerController controller = gameplaySession != null
+        ? gameplaySession.getPlayerController()
+        : null;
+
+float dashCooldown = controller != null
+        ? controller.getDashCooldownRemaining()
+        : 0f;
+
+float pushCooldown = controller != null
+        ? controller.getPushCooldownRemaining()
+        : 0f;
+
+String dashText = dashCooldown <= 0f
+        ? "READY"
+        : String.format(java.util.Locale.US, "%.1fs", dashCooldown);
+
+String pushText = pushCooldown <= 0f
+        ? "READY"
+        : String.format(java.util.Locale.US, "%.1fs", pushCooldown);
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(
@@ -973,8 +994,98 @@ public class Page1Screen implements Screen {
             );
         }
 
-        shapeRenderer.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        
+        // ==================================================
+// DASH AND PUSH HUD PANELS
+// ==================================================
+
+float skillPanelWidth = Math.min(145f, screenWidth * 0.13f);
+float skillPanelHeight = 45f;
+float skillPanelY = 12f;
+
+float dashPanelX = screenWidth * 0.27f;
+float pushPanelX = screenWidth * 0.61f;
+
+float dashProgress = Math.max(
+        0f,
+        Math.min(1f, 1f - dashCooldown / 1.5f)
+);
+
+float pushProgress = Math.max(
+        0f,
+        Math.min(1f, 1f - pushCooldown / 4f)
+);
+
+// Dash panel background.
+shapeRenderer.setColor(0.08f, 0.08f, 0.10f, 1f);
+shapeRenderer.rect(
+        dashPanelX,
+        skillPanelY,
+        skillPanelWidth,
+        skillPanelHeight
+);
+
+// Dash accent.
+shapeRenderer.setColor(0.95f, 0.65f, 0.12f, 1f);
+shapeRenderer.rect(
+        dashPanelX,
+        skillPanelY + skillPanelHeight - 3f,
+        skillPanelWidth,
+        3f
+);
+
+// Dash cooldown bar background.
+shapeRenderer.setColor(0.18f, 0.18f, 0.20f, 1f);
+shapeRenderer.rect(
+        dashPanelX + 8f,
+        skillPanelY + 5f,
+        skillPanelWidth - 16f,
+        4f
+);
+
+// Dash cooldown bar.
+if (dashProgress > 0f) {
+    shapeRenderer.setColor(0.95f, 0.65f, 0.12f, 1f);
+    shapeRenderer.rect(
+            dashPanelX + 8f,
+            skillPanelY + 5f,
+            (skillPanelWidth - 16f) * dashProgress,
+            4f
+    );
+}
+
+// Push panel background.
+shapeRenderer.setColor(0.08f, 0.08f, 0.10f, 1f);
+shapeRenderer.rect(
+        pushPanelX,
+        skillPanelY,
+        skillPanelWidth,
+        skillPanelHeight
+);
+
+// Push accent.
+shapeRenderer.setColor(0.85f, 0.18f, 0.12f, 1f);
+shapeRenderer.rect(
+        pushPanelX,
+        skillPanelY + skillPanelHeight - 3f,
+        skillPanelWidth,
+        3f
+);
+
+// Push cooldown bar.
+if (pushProgress > 0f) {
+    shapeRenderer.setColor(0.85f, 0.18f, 0.12f, 1f);
+    shapeRenderer.rect(
+        pushPanelX + 8f,
+        skillPanelY + 5f,
+        (skillPanelWidth - 16f) * pushProgress,
+        4f
+    );
+}
+
+shapeRenderer.end();
+
+Gdx.gl.glDisable(GL20.GL_BLEND);
 
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
@@ -1052,7 +1163,47 @@ public class Page1Screen implements Screen {
             centerX - 45f,
             hudHeight + 22f
         );
+// ==================================================
+// DASH AND PUSH HUD TEXT
+// ==================================================
 
+hudFont.setColor(
+        dashCooldown <= 0f ? Color.GREEN : Color.WHITE
+);
+
+hudFont.draw(
+        batch,
+        "Q  DASH",
+        dashPanelX + 8f,
+        skillPanelY + 34f
+);
+
+hudFont.draw(
+        batch,
+        dashText,
+        dashPanelX + 8f,
+        skillPanelY + 19f
+);
+
+hudFont.setColor(
+        pushCooldown <= 0f ? Color.GREEN : Color.WHITE
+);
+
+hudFont.draw(
+        batch,
+        "F  PUSH",
+        pushPanelX + 8f,
+        skillPanelY + 34f
+);
+
+hudFont.draw(
+        batch,
+        pushText,
+        pushPanelX + 8f,
+        skillPanelY + 19f
+);
+
+hudFont.setColor(Color.WHITE);
         batch.end();
 
         batch.setProjectionMatrix(camera.combined);
