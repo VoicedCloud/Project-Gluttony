@@ -4,7 +4,7 @@ import com.badlogic.gdx.audio.Sound;
 
 public enum WeaponProfile {
     PISTOL("Glock P80", 12, 30, 500f, 3, 150, 2040, false, 1.0f, 1,
-            "sprites/weapons/Glock - P80.png",
+            "sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
             "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[SHOOT WITH CASING AND MUZZLE FLASH] Glock - P80.png",
             "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[RELOAD] Glock - P80.png",
             "sprites/bullet.png",
@@ -39,7 +39,7 @@ public enum WeaponProfile {
             new ReloadMilestone[]{}
     ),
     GUUN("GUUN", 10, 999, 5000f, 1, 500, 1500, false, 10.0f, 1,
-            "sprites/weapons/Glock - P80.png",
+            "sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
             "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[SHOOT WITH CASING AND MUZZLE FLASH] Glock - P80.png",
             "sprites/weapons/02 - Sprite sheets/Glock - P80 [64x48]/[RELOAD] Glock - P80.png",
             "sprites/bullet.png",

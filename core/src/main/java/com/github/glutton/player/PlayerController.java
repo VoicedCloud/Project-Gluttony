@@ -594,7 +594,7 @@ public class PlayerController {
     public void startReload(WeaponState ws) {
 
         if (ws.isReloading
-                || ws.currentAmmo >= ws.activeWeapon.maxAmmo) {
+        || ws.currentAmmo >= ws.getEffectiveMaxAmmo(ws.activeWeapon)) {
             return;
         }
 
@@ -632,7 +632,7 @@ public class PlayerController {
                 if (ws.ownedWeapons.contains(nextWeapon)) {
 
                     ws.activeWeapon = nextWeapon;
-                    ws.currentAmmo = nextWeapon.maxAmmo;
+                    ws.currentAmmo = ws.getEffectiveMaxAmmo(nextWeapon);
 
                     break;
                 }
@@ -672,10 +672,10 @@ public class PlayerController {
                 }
             }
 
-            if (elapsed >= ws.activeWeapon.reloadMs) {
+           if (elapsed >= ws.activeWeapon.reloadMs) {
 
-                ws.currentAmmo = ws.activeWeapon.maxAmmo;
-                ws.isReloading = false;
+    ws.currentAmmo = ws.getEffectiveMaxAmmo(ws.activeWeapon);
+    ws.isReloading = false;
 
                 for (WeaponProfile.ReloadMilestone milestone
                         : ws.activeWeapon.milestones) {
@@ -709,10 +709,10 @@ public class PlayerController {
         // ==================================================
 
         if (isShooting
-                && !ws.isReloading
-                && ws.currentAmmo > 0
-                && TimeUtils.timeSinceMillis(ws.lastFireTime)
-                        >= weapon.fireDelayMs) {
+        && !ws.isReloading
+        && ws.currentAmmo > 0
+        && TimeUtils.timeSinceMillis(ws.lastFireTime)
+                >= ws.getEffectiveFireDelay(weapon)) {
 
             ws.currentAmmo--;
 
@@ -741,13 +741,13 @@ public class PlayerController {
                 }
 
                 bulletManager.spawn(
-                        muzzlePos.x,
-                        muzzlePos.y,
-                        ws.aimAngleRad + spreadRad,
-                        weapon.bulletSpeed,
-                        weapon.damage,
-                        weapon
-                );
+        muzzlePos.x,
+        muzzlePos.y,
+        ws.aimAngleRad + spreadRad,
+        weapon.bulletSpeed,
+        ws.getEffectiveDamage(weapon),
+        weapon
+);
             }
 
             // ==================================================

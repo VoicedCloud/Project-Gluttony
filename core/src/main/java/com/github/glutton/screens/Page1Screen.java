@@ -25,10 +25,12 @@ import com.github.glutton.entities.TargetDummy;
 import com.github.glutton.entities.Zombie;
 import com.github.glutton.entities.Ghoul;
 import com.github.glutton.entities.Hound;
+import com.github.glutton.entities.UpgradeNPC;
 import com.github.glutton.player.PlayerState;
 import com.github.glutton.weapons.WeaponProfile;
 import com.github.glutton.world.GameplaySession;
 import com.github.glutton.world.PhysicsConfig;
+import com.github.glutton.weapons.WeaponState;
 
 import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
@@ -78,7 +80,7 @@ public class Page1Screen implements Screen {
     private static final int BOSS_MAX_HEALTH = 1500;
     private static final int BOSS_BASE_DAMAGE = 5;
 
-    private static final int TOTAL_WAVES = 6;
+   
     private static final float BUY_TIME_SECONDS = 15f;
     private static final int SHOTGUN_COST = 200;
     private static final int AK_COST = 180;
@@ -86,8 +88,23 @@ public class Page1Screen implements Screen {
     private int currentWave = 0;
     private int totalKills = 0;
     private int currency = 0;
+    // ==================================================
+// INFINITE WAVES AND BOSS SYSTEM
+// ==================================================
 
-    private boolean bossSpawned = false;
+private boolean bossSpawned = false;
+
+private UpgradeNPC upgradeNPC;
+
+private boolean upgradeMenuOpen = false;
+
+private String upgradeMessage = "";
+
+private static final int DAMAGE_UPGRADE_BASE_COST = 100;
+private static final int MAGAZINE_UPGRADE_BASE_COST = 80;
+private static final int FIRE_RATE_UPGRADE_BASE_COST = 120;
+
+   
     private boolean waitingForNextWave = false;
     private boolean shopOpen = false;
 
@@ -177,87 +194,50 @@ public class Page1Screen implements Screen {
     // WAVE MANAGEMENT
     // --------------------------------------------------
 
-    private void startNextWave() {
-        if (bossSpawned || currentWave >= TOTAL_WAVES) {
-            return;
-        }
+   private void startNextWave() {
+    currentWave++;
 
-        currentWave++;
-        waitingForNextWave = false;
-        shopOpen = false;
-        waveDelayTimer = 0f;
-        shopMessage = "";
+    waitingForNextWave = false;
+    shopOpen = false;
+    upgradeMenuOpen = false;
+    waveDelayTimer = 0f;
+    shopMessage = "";
 
-        Gdx.app.log("Waves", "Starting Wave " + currentWave);
-
-        switch (currentWave) {
-                    case 1:
-             spawnMixedWave(10, 6, 3, 1);
-             break;
-            case 2:
-                spawnMixedWave(10, 6, 3, 1);
-                break;
-
-            case 3:
-                spawnMixedWave(10, 5, 3, 2);
-                break;
-
-            case 4:
-                spawnMixedWave(15, 8, 4, 3);
-                break;
-
-            case 5:
-                spawnMixedWave(20, 10, 5, 5);
-                break;
-
-            case 6:
-                spawnBoss();
-                break;
-
-            default:
-                break;
-        }
+    if (upgradeNPC != null) {
+        upgradeNPC.remove();
+        upgradeNPC = null;
     }
 
-    private void spawnMixedWave(
-            int total,
-            int zombies,
-            int ghouls,
-            int hounds
-    ) {
-        spawnMobGroup(zombies, "zombie");
-        spawnMobGroup(ghouls, "ghoul");
-        spawnMobGroup(hounds, "hound");
-
-        int remaining = total - zombies - ghouls - hounds;
-
-        if (remaining > 0) {
-            spawnMobGroup(remaining, "zombie");
-        }
+    if (currentWave % 5 == 0) {
+        spawnBosses(currentWave / 5);
+        return;
     }
 
-    private void spawnMobGroup(int count, String enemyType) {
-        if (sceneLoader == null || sceneLoader.getWorld() == null) {
-            return;
-        }
+    switch (currentWave) {
+        case 1:
+        case 2:
+            spawnMixedWave(10, 6, 3, 1);
+            break;
 
-        for (int i = 0; i < count; i++) {
-            float spawnX = ENEMY_SPAWN_X + i * 70f;
-            float spawnY = ENEMY_SPAWN_Y;
+        case 3:
+            spawnMixedWave(10, 5, 3, 2);
+            break;
 
-            Enemy enemy = createEnemy(enemyType, spawnX, spawnY);
+        case 4:
+            spawnMixedWave(15, 8, 4, 3);
+            break;
 
-            if (enemy != null) {
-                enemies.add(enemy);
-            }
-        }
+        default:
+            int total = 10 + currentWave * 3;
 
-        Gdx.app.log(
-            "Waves",
-            "Spawned " + count + " " + enemyType
-                + "(s). Total kills: " + totalKills
-        );
+            int zombies = Math.round(total * 0.60f);
+            int ghouls = Math.round(total * 0.25f);
+            int hounds = total - zombies - ghouls;
+
+            spawnMixedWave(total, zombies, ghouls, hounds);
+            break;
     }
+}
 
     private Enemy createEnemy(String enemyType, float x, float y) {
         switch (enemyType.toLowerCase()) {
@@ -294,27 +274,34 @@ public class Page1Screen implements Screen {
         }
     }
 
-    private void spawnBoss() {
-        if (bossSpawned
-                || sceneLoader == null
-                || sceneLoader.getWorld() == null) {
-            return;
-        }
+    private void spawnBosses(int bossCount) {
+    if (sceneLoader == null || sceneLoader.getWorld() == null) {
+        return;
+    }
 
-        bossSpawned = true;
-        waitingForNextWave = false;
-        shopOpen = false;
+    bossSpawned = true;
+    waitingForNextWave = false;
+    shopOpen = false;
+    upgradeMenuOpen = false;
 
-        float bossWidth = ENEMY_WIDTH * 1.5f;
-        float bossHeight = ENEMY_HEIGHT * 1.5f;
+    float bossWidth = ENEMY_WIDTH * 1.5f;
+    float bossHeight = ENEMY_HEIGHT * 1.5f;
+
+    for (int i = 0; i < bossCount; i++) {
+        float spawnX = ENEMY_SPAWN_X + i * 90f;
+        float spawnY = ENEMY_SPAWN_Y;
+
+        // Boss health increases slightly every boss milestone.
+        int bossHealth = BOSS_MAX_HEALTH
+                + ((currentWave / 5) - 1) * 250;
 
         TargetDummy boss = new TargetDummy(
             sceneLoader.getWorld(),
-            ENEMY_SPAWN_X,
-            ENEMY_SPAWN_Y,
+            spawnX,
+            spawnY,
             bossWidth,
             bossHeight,
-            BOSS_MAX_HEALTH,
+            bossHealth,
             BOSS_BASE_DAMAGE,
             250f,
             40f,
@@ -322,43 +309,145 @@ public class Page1Screen implements Screen {
         );
 
         enemies.add(boss);
-
-        Gdx.app.log("Waves", "BOSS SPAWNED! Prepare for the fight!");
     }
+
+    Gdx.app.log(
+        "Waves",
+        "Wave " + currentWave + ": spawned "
+            + bossCount + " boss(es)."
+    );
+}
 
     private void updateWaveProgress(float delta) {
-        if (bossSpawned || !enemies.isEmpty()) {
-            return;
-        }
 
-        if (!waitingForNextWave) {
-            if (currentWave >= TOTAL_WAVES) {
-                return;
+    // Wait until every enemy and boss is defeated.
+    if (!enemies.isEmpty()) {
+        return;
+    }
+
+    // The boss wave has been cleared.
+    bossSpawned = false;
+
+    if (!waitingForNextWave) {
+        waitingForNextWave = true;
+        shopOpen = true;
+        waveDelayTimer = BUY_TIME_SECONDS;
+
+        shopMessage = "Wave cleared! Spend your currency before the next wave.";
+
+        // Spawn an upgrade NPC after every third cleared wave.
+        if (currentWave % 3 == 0 && gameplaySession != null) {
+            PlayerState player = gameplaySession.getPlayerState();
+
+            if (player != null) {
+                upgradeNPC = new UpgradeNPC(
+                    player.x + player.width + 15f,
+                    player.y,
+                    player.width,
+                    player.height
+                );
             }
-
-            waitingForNextWave = true;
-            shopOpen = true;
-            waveDelayTimer = BUY_TIME_SECONDS;
-
-            shopMessage =
-                "Wave cleared! [1] Shotgun $200  [2] AK-47 $180";
-
-            Gdx.app.log(
-                "Waves",
-                "Wave " + currentWave + " cleared. Shop open."
-            );
         }
 
-        if (shopOpen) {
+        Gdx.app.log(
+            "Waves",
+            "Wave " + currentWave + " cleared."
+        );
+    }
+
+    if (shopOpen) {
+
+        PlayerState player = gameplaySession != null
+                ? gameplaySession.getPlayerState()
+                : null;
+
+        boolean nearNPC = player != null
+                && upgradeNPC != null
+                && upgradeNPC.isActive()
+                && upgradeNPC.isNear(player.x, player.y);
+
+        // B opens or closes the NPC upgrade menu.
+        if (nearNPC && Gdx.input.isKeyJustPressed(Input.Keys.B)) {
+            upgradeMenuOpen = !upgradeMenuOpen;
+        }
+
+        if (!nearNPC) {
+            upgradeMenuOpen = false;
+        }
+
+        if (upgradeMenuOpen) {
+            handleUpgradeInput();
+        } else {
             handleShopInput();
+        }
 
-            waveDelayTimer -= delta;
+        waveDelayTimer -= delta;
 
-            if (waveDelayTimer <= 0f) {
-                startNextWave();
-            }
+        if (waveDelayTimer <= 0f) {
+            startNextWave();
         }
     }
+}
+    // ==================================================
+// SPAWN MIXED ENEMY WAVES
+// ==================================================
+private void spawnMixedWave(
+        int total,
+        int zombies,
+        int ghouls,
+        int hounds) {
+
+    if (sceneLoader == null || sceneLoader.getWorld() == null) {
+        return;
+    }
+
+    int spawned = 0;
+
+    // Spawn zombies
+    for (int i = 0; i < zombies && spawned < total; i++) {
+        float x = ENEMY_SPAWN_X + (spawned % 5) * 60f;
+        float y = ENEMY_SPAWN_Y + (spawned / 5) * 60f;
+
+        Enemy enemy = createEnemy("zombie", x, y);
+        if (enemy != null) {
+            enemies.add(enemy);
+        }
+
+        spawned++;
+    }
+
+    // Spawn ghouls
+    for (int i = 0; i < ghouls && spawned < total; i++) {
+        float x = ENEMY_SPAWN_X + (spawned % 5) * 60f;
+        float y = ENEMY_SPAWN_Y + (spawned / 5) * 60f;
+
+        Enemy enemy = createEnemy("ghoul", x, y);
+        if (enemy != null) {
+            enemies.add(enemy);
+        }
+
+        spawned++;
+    }
+
+    // Spawn hounds
+    for (int i = 0; i < hounds && spawned < total; i++) {
+        float x = ENEMY_SPAWN_X + (spawned % 5) * 60f;
+        float y = ENEMY_SPAWN_Y + (spawned / 5) * 60f;
+
+        Enemy enemy = createEnemy("hound", x, y);
+        if (enemy != null) {
+            enemies.add(enemy);
+        }
+
+        spawned++;
+    }
+
+    Gdx.app.log(
+        "Waves",
+        "Wave " + currentWave + ": spawned "
+            + spawned + " enemies."
+    );
+}
 
     private void handleShopInput() {
         if (gameplaySession == null) {
@@ -405,24 +494,114 @@ public class Page1Screen implements Screen {
             }
         }
     }
+    private void handleUpgradeInput() {
+
+    if (gameplaySession == null) {
+        return;
+    }
+
+    PlayerState player = gameplaySession.getPlayerState();
+
+    if (player == null || player.weaponState == null) {
+        return;
+    }
+
+    WeaponState ws = player.weaponState;
+    WeaponProfile weapon = ws.activeWeapon;
+
+    // 1 = damage upgrade.
+    if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
+
+        int level = ws.getDamageLevel(weapon);
+
+        int cost = DAMAGE_UPGRADE_BASE_COST * (level + 1);
+
+        if (level >= WeaponState.MAX_UPGRADE_LEVEL) {
+            upgradeMessage = "Damage is already at maximum level.";
+
+        } else if (currency < cost) {
+            upgradeMessage = "Not enough currency! Need $" + cost;
+
+        } else if (ws.upgradeDamage(weapon)) {
+            currency -= cost;
+
+            upgradeMessage = weapon.displayName
+                    + " damage upgraded to level "
+                    + ws.getDamageLevel(weapon) + "!";
+        }
+    }
+
+    // 2 = magazine upgrade.
+    if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
+
+        int level = ws.getMagazineLevel(weapon);
+
+        int cost = MAGAZINE_UPGRADE_BASE_COST * (level + 1);
+
+        if (level >= WeaponState.MAX_UPGRADE_LEVEL) {
+            upgradeMessage = "Magazine is already at maximum level.";
+
+        } else if (currency < cost) {
+            upgradeMessage = "Not enough currency! Need $" + cost;
+
+        } else if (ws.upgradeMagazine(weapon)) {
+            currency -= cost;
+
+            upgradeMessage = weapon.displayName
+                    + " magazine upgraded to level "
+                    + ws.getMagazineLevel(weapon) + "!";
+        }
+    }
+
+    // 3 = fire-rate upgrade.
+    if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) {
+
+        int level = ws.getFireRateLevel(weapon);
+
+        int cost = FIRE_RATE_UPGRADE_BASE_COST * (level + 1);
+
+        if (level >= WeaponState.MAX_UPGRADE_LEVEL) {
+            upgradeMessage = "Fire rate is already at maximum level.";
+
+        } else if (currency < cost) {
+            upgradeMessage = "Not enough currency! Need $" + cost;
+
+        } else if (ws.upgradeFireRate(weapon)) {
+            currency -= cost;
+
+            upgradeMessage = weapon.displayName
+                    + " fire rate upgraded to level "
+                    + ws.getFireRateLevel(weapon) + "!";
+        }
+    }
+
+    
+}
 
     private void equipWeapon(PlayerState player, WeaponProfile weapon) {
-        player.weaponState.activeWeapon = weapon;
-        player.weaponState.currentAmmo = weapon.maxAmmo;
-        player.weaponState.isReloading = false;
-    }
+    WeaponState ws = player.weaponState;
+
+    ws.activeWeapon = weapon;
+    ws.currentAmmo = ws.getEffectiveMaxAmmo(weapon);
+    ws.isReloading = false;
+}
 
     private int getEnemyReward(Enemy enemy) {
-        if (enemy instanceof Hound) {
-            return 13;
-        }
 
-        if (enemy instanceof Zombie || enemy instanceof Ghoul) {
-            return 10;
-        }
-
-        return 0;
+    if (enemy instanceof TargetDummy) {
+        return 100;
     }
+
+    if (enemy instanceof Hound) {
+        return 13;
+    }
+
+    if (enemy instanceof Zombie || enemy instanceof Ghoul) {
+        return 10;
+    }
+
+    return 0;
+}
         // --------------------------------------------------
     // MAIN GAME LOOP
     // --------------------------------------------------
@@ -501,9 +680,7 @@ public class Page1Screen implements Screen {
                 );
             }
 
-            for (Enemy enemy : enemies) {
-                enemy.syncBounds();
-            }
+            
         }
 
         // Enemy AI and attacks.
@@ -578,16 +755,22 @@ public class Page1Screen implements Screen {
             );
 
             shapeRenderer.setProjectionMatrix(camera.combined);
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-            gameplaySession.renderMuzzleFlash(shapeRenderer);
+gameplaySession.renderMuzzleFlash(shapeRenderer);
 
-            for (Enemy enemy : enemies) {
-                enemy.render(shapeRenderer);
-            }
+for (Enemy enemy : enemies) {
+    enemy.render(shapeRenderer);
+}
 
-            shapeRenderer.end();
+// Render the upgrade NPC during the shop break.
+if (shopOpen
+        && upgradeNPC != null
+        && upgradeNPC.isActive()) {
+    upgradeNPC.render(shapeRenderer);
+}
 
+shapeRenderer.end();
             renderEnemyHealthBars();
         }
 
@@ -863,7 +1046,9 @@ public class Page1Screen implements Screen {
         healthPercent = Math.max(0f, Math.min(1f, healthPercent));
 
         int ammo = Math.max(0, player.weaponState.currentAmmo);
-        int maxAmmo = player.weaponState.activeWeapon.maxAmmo;
+       int maxAmmo = player.weaponState.getEffectiveMaxAmmo(
+    player.weaponState.activeWeapon
+);
 
         String weaponName = player.weaponState.activeWeapon.displayName;
         
@@ -1223,8 +1408,8 @@ hudFont.setColor(Color.WHITE);
         hudFont.setColor(Color.WHITE);
 
         String waveText = bossSpawned
-            ? "BOSS FIGHT"
-            : "WAVE " + currentWave + " / " + TOTAL_WAVES;
+    ? "BOSS WAVE " + currentWave
+    : "WAVE " + currentWave;
 
         GlyphLayout layout = new GlyphLayout(hudFont, waveText);
 
@@ -1245,6 +1430,78 @@ hudFont.setColor(Color.WHITE);
         );
 
         if (shopOpen) {
+            PlayerState player = gameplaySession != null
+        ? gameplaySession.getPlayerState()
+        : null;
+
+boolean nearNPC = player != null
+        && upgradeNPC != null
+        && upgradeNPC.isActive()
+        && upgradeNPC.isNear(player.x, player.y);
+
+if (nearNPC && !upgradeMenuOpen) {
+    hudFont.setColor(Color.CYAN);
+
+    drawCenteredText(
+        "PRESS B TO UPGRADE",
+        camera.position.x,
+        camera.position.y + viewHeight / 2f - 100f
+    );
+}
+
+if (upgradeMenuOpen && player != null) {
+
+    WeaponState ws = player.weaponState;
+    WeaponProfile weapon = ws.activeWeapon;
+
+    hudFont.setColor(Color.CYAN);
+
+    drawCenteredText(
+        "WEAPON UPGRADE: " + weapon.displayName,
+        camera.position.x,
+        camera.position.y + viewHeight / 2f - 100f
+    );
+
+    drawCenteredText(
+        "[1] DAMAGE L" + ws.getDamageLevel(weapon)
+            + " - $" + DAMAGE_UPGRADE_BASE_COST
+                * (ws.getDamageLevel(weapon) + 1),
+        camera.position.x,
+        camera.position.y + viewHeight / 2f - 120f
+    );
+
+    drawCenteredText(
+        "[2] MAGAZINE L" + ws.getMagazineLevel(weapon)
+            + " - $" + MAGAZINE_UPGRADE_BASE_COST
+                * (ws.getMagazineLevel(weapon) + 1),
+        camera.position.x,
+        camera.position.y + viewHeight / 2f - 140f
+    );
+
+    drawCenteredText(
+        "[3] FIRE RATE L" + ws.getFireRateLevel(weapon)
+            + " - $" + FIRE_RATE_UPGRADE_BASE_COST
+                * (ws.getFireRateLevel(weapon) + 1),
+        camera.position.x,
+        camera.position.y + viewHeight / 2f - 160f
+    );
+
+    drawCenteredText(
+        "[B] CLOSE",
+        camera.position.x,
+        camera.position.y + viewHeight / 2f - 180f
+    );
+
+    hudFont.setColor(Color.WHITE);
+
+    if (!upgradeMessage.isEmpty()) {
+        drawCenteredText(
+            upgradeMessage,
+            camera.position.x,
+            camera.position.y + viewHeight / 2f - 200f
+        );
+    }
+}
             float secondsLeft = Math.max(0f, waveDelayTimer);
 
             String timerText =
@@ -1297,41 +1554,47 @@ hudFont.setColor(Color.WHITE);
     // --------------------------------------------------
 
     private void renderBossHealth(
-            PlayerState player,
-            float viewWidth,
-            float viewHeight
-    ) {
-        if (!bossSpawned) {
-            return;
+        PlayerState player,
+        float viewWidth,
+        float viewHeight
+) {
+    if (!bossSpawned) {
+        return;
+    }
+
+    List<Enemy> bosses = new ArrayList<>();
+
+    for (Enemy enemy : enemies) {
+        if (enemy instanceof TargetDummy
+                && !enemy.isDestroyed()
+                && !enemy.isBodyDisposed()) {
+            bosses.add(enemy);
         }
+    }
 
-        Enemy boss = null;
+    if (bosses.isEmpty()) {
+        return;
+    }
 
-        for (Enemy enemy : enemies) {
-            if (enemy instanceof TargetDummy) {
-                boss = enemy;
-                break;
-            }
-        }
+    float barWidth = Math.min(400f, viewWidth * 0.6f);
+    float barHeight = 10f;
 
-        if (boss == null) {
-            return;
-        }
+    float barX = camera.position.x - barWidth / 2f;
+    float firstBarY = camera.position.y + viewHeight / 2f - 75f;
 
-        float barWidth = Math.min(400f, viewWidth * 0.6f);
-        float barHeight = 14f;
+    shapeRenderer.setProjectionMatrix(camera.combined);
+    shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        float barX = camera.position.x - barWidth / 2f;
-        float barY = camera.position.y + viewHeight / 2f - 75f;
+    for (int i = 0; i < bosses.size(); i++) {
+        Enemy boss = bosses.get(i);
+
+        float barY = firstBarY - i * 24f;
 
         float healthPercent = boss.getMaxHealth() > 0
-            ? (float) boss.getHealth() / boss.getMaxHealth()
-            : 0f;
+                ? (float) boss.getHealth() / boss.getMaxHealth()
+                : 0f;
 
         healthPercent = Math.max(0f, Math.min(1f, healthPercent));
-
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         shapeRenderer.setColor(0.12f, 0.02f, 0.02f, 1f);
         shapeRenderer.rect(barX, barY, barWidth, barHeight);
@@ -1343,14 +1606,21 @@ hudFont.setColor(Color.WHITE);
             barWidth * healthPercent,
             barHeight
         );
+    }
 
-        shapeRenderer.end();
+    shapeRenderer.end();
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
+    batch.setProjectionMatrix(camera.combined);
+    batch.begin();
 
-        String bossText =
-            "BOSS: " + boss.getHealth() + " / " + boss.getMaxHealth();
+    for (int i = 0; i < bosses.size(); i++) {
+        Enemy boss = bosses.get(i);
+
+        float barY = firstBarY - i * 24f;
+
+        String bossText = "BOSS " + (i + 1)
+                + ": " + boss.getHealth()
+                + " / " + boss.getMaxHealth();
 
         GlyphLayout layout = new GlyphLayout(hudFont, bossText);
 
@@ -1360,11 +1630,12 @@ hudFont.setColor(Color.WHITE);
             batch,
             bossText,
             camera.position.x - layout.width / 2f,
-            barY + barHeight + 18f
+            barY + barHeight + 10f
         );
-
-        batch.end();
     }
+
+    batch.end();
+}
 
     // --------------------------------------------------
     // RESIZE
