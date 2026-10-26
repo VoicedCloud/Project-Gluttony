@@ -58,6 +58,8 @@ PlaceHolderBackgroundMainMenu
 	bounds: 1, 951, 1920, 1080
 Rat_Typewriter
 	bounds: 1283, 437, 512, 512
+Revolver - Colt 45 [64x32]
+	bounds: 1973, 1949, 64, 32
 Run
 	index: 0
 	bounds: 1673, 307, 128, 128
@@ -107,33 +109,40 @@ pack2.png
 	size: 2048, 2048
 BGART1
 	index: 1
-	bounds: 1, 723, 1280, 720
-BGART1
-	index: 2
 	bounds: 1, 1, 1280, 720
 Rat_Typewriter16
-	bounds: 1503, 1258, 512, 512
+	bounds: 1283, 1491, 512, 512
+pngegg
+	bounds: 1, 723, 1280, 1280
+
+pack3.png
+	size: 2048, 2048
+BGART1
+	index: 2
+	bounds: 1, 723, 1280, 720
+BGART1
+	index: 3
+	bounds: 1, 1, 1280, 720
 logo placeholder
 	bounds: 1, 1445, 1500, 325
 
-pack3.png
+pack4.png
 	size: 2048, 2048
 5a0ac29f5a997e1c2cea10a1
 	bounds: 1, 723, 1280, 1091
 BGART1
-	index: 3
-	bounds: 1, 1, 1280, 720
-
-pack4.png
-	size: 2048, 2048
-BGART1
 	index: 4
-	bounds: 1, 723, 1280, 720
-BGART1
-	index: 5
 	bounds: 1, 1, 1280, 720
 
 pack5.png
+	size: 2048, 2048
+BGART1
+	index: 5
+	bounds: 1, 1, 1280, 720
+pngaaa.com-4236060
+	bounds: 1, 723, 1153, 1117
+
+pack6.png
 	size: 2048, 2048
 BGART1
 	index: 6
@@ -142,7 +151,7 @@ BGART1
 	index: 7
 	bounds: 1, 1, 1280, 720
 
-pack6.png
+pack7.png
 	size: 2048, 2048
 BGART1
 	index: 8
@@ -151,7 +160,7 @@ BGART1
 	index: 9
 	bounds: 1, 1, 1280, 720
 
-pack7.png
+pack8.png
 	size: 2048, 2048
 BGART1
 	index: 10
@@ -160,7 +169,7 @@ BGART1
 	index: 11
 	bounds: 1, 1, 1280, 720
 
-pack8.png
+pack9.png
 	size: 2048, 2048
 BGART1
 	index: 12
@@ -169,7 +178,7 @@ BGART1
 	index: 13
 	bounds: 1, 1, 1280, 720
 
-pack9.png
+pack10.png
 	size: 2048, 2048
 BGART1
 	index: 14
@@ -178,7 +187,7 @@ BGART1
 	index: 15
 	bounds: 1, 1, 1280, 720
 
-pack10.png
+pack11.png
 	size: 2048, 2048
 BGART1
 	index: 16
@@ -187,7 +196,7 @@ BGART1
 	index: 17
 	bounds: 1, 1, 1280, 720
 
-pack11.png
+pack12.png
 	size: 2048, 2048
 BGART1
 	index: 18
@@ -196,7 +205,7 @@ BGART1
 	index: 19
 	bounds: 1, 1, 1280, 720
 
-pack12.png
+pack13.png
 	size: 2048, 2048
 BGART1
 	index: 20
@@ -205,7 +214,7 @@ BGART1
 	index: 21
 	bounds: 1, 1, 1280, 720
 
-pack13.png
+pack14.png
 	size: 2048, 2048
 BGART1
 	index: 22
@@ -214,7 +223,7 @@ BGART1
 	index: 23
 	bounds: 1, 1, 1280, 720
 
-pack14.png
+pack15.png
 	size: 2048, 2048
 BGART1
 	index: 24
@@ -223,7 +232,7 @@ BGART1
 	index: 25
 	bounds: 1, 1, 1280, 720
 
-pack15.png
+pack16.png
 	size: 2048, 2048
 BGART1
 	index: 26
@@ -232,7 +241,7 @@ BGART1
 	index: 27
 	bounds: 1, 1, 1280, 720
 
-pack16.png
+pack17.png
 	size: 2048, 2048
 BGART1
 	index: 28
@@ -241,7 +250,7 @@ BGART1
 	index: 29
 	bounds: 1, 1, 1280, 720
 
-pack17.png
+pack18.png
 	size: 2048, 2048
 BGART1
 	index: 30
@@ -250,7 +259,7 @@ BGART1
 	index: 31
 	bounds: 1, 1, 1280, 720
 
-pack18.png
+pack19.png
 	size: 2048, 2048
 BGART1
 	index: 32
@@ -259,7 +268,7 @@ BGART1
 	index: 33
 	bounds: 1, 1, 1280, 720
 
-pack19.png
+pack20.png
 	size: 2048, 2048
 BGART1
 	index: 34
@@ -268,7 +277,7 @@ BGART1
 	index: 35
 	bounds: 1, 1, 1280, 720
 
-pack20.png
+pack21.png
 	size: 2048, 2048
 BGART1
 	index: 36
@@ -277,7 +286,7 @@ BGART1
 	index: 37
 	bounds: 1, 1, 1280, 720
 
-pack21.png
+pack22.png
 	size: 2048, 2048
 BGART1
 	index: 38
@@ -286,7 +295,7 @@ BGART1
 	index: 39
 	bounds: 1, 1, 1280, 720
 
-pack22.png
+pack23.png
 	size: 2048, 2048
 BGART1
 	index: 40
@@ -295,7 +304,7 @@ BGART1
 	index: 41
 	bounds: 1, 1, 1280, 720
 
-pack23.png
+pack24.png
 	size: 2048, 2048
 BGART1
 	index: 42
@@ -304,7 +313,7 @@ BGART1
 	index: 43
 	bounds: 1, 1, 1280, 720
 
-pack24.png
+pack25.png
 	size: 2048, 2048
 BGART1
 	index: 44
@@ -313,7 +322,7 @@ BGART1
 	index: 45
 	bounds: 1, 1, 1280, 720
 
-pack25.png
+pack26.png
 	size: 2048, 2048
 BGART1
 	index: 46
@@ -322,7 +331,7 @@ BGART1
 	index: 47
 	bounds: 1, 1, 1280, 720
 
-pack26.png
+pack27.png
 	size: 2048, 2048
 BGART1
 	index: 48
@@ -331,7 +340,7 @@ BGART1
 	index: 49
 	bounds: 1, 1, 1280, 720
 
-pack27.png
+pack28.png
 	size: 2048, 2048
 BGART1
 	index: 50
@@ -340,7 +349,7 @@ BGART1
 	index: 51
 	bounds: 1, 1, 1280, 720
 
-pack28.png
+pack29.png
 	size: 2048, 2048
 BGART1
 	index: 52
@@ -349,7 +358,7 @@ BGART1
 	index: 53
 	bounds: 1, 1, 1280, 720
 
-pack29.png
+pack30.png
 	size: 2048, 2048
 BGART1
 	index: 54
@@ -358,7 +367,7 @@ BGART1
 	index: 55
 	bounds: 1, 1, 1280, 720
 
-pack30.png
+pack31.png
 	size: 2048, 2048
 BGART1
 	index: 56
@@ -367,7 +376,7 @@ BGART1
 	index: 57
 	bounds: 1, 1, 1280, 720
 
-pack31.png
+pack32.png
 	size: 2048, 2048
 BGART1
 	index: 58
@@ -376,7 +385,7 @@ BGART1
 	index: 59
 	bounds: 1, 1, 1280, 720
 
-pack32.png
+pack33.png
 	size: 2048, 2048
 BGART1
 	index: 60
@@ -385,7 +394,7 @@ BGART1
 	index: 61
 	bounds: 1, 1, 1280, 720
 
-pack33.png
+pack34.png
 	size: 2048, 2048
 BGART1
 	index: 62
@@ -394,7 +403,7 @@ BGART1
 	index: 63
 	bounds: 1, 1, 1280, 720
 
-pack34.png
+pack35.png
 	size: 2048, 2048
 BGART1
 	index: 64
@@ -403,7 +412,7 @@ BGART1
 	index: 65
 	bounds: 1, 1, 1280, 720
 
-pack35.png
+pack36.png
 	size: 2048, 2048
 BGART1
 	index: 66
@@ -412,7 +421,7 @@ BGART1
 	index: 67
 	bounds: 1, 1, 1280, 720
 
-pack36.png
+pack37.png
 	size: 2048, 2048
 BGART1
 	index: 68
@@ -421,7 +430,7 @@ BGART1
 	index: 69
 	bounds: 1, 1, 1280, 720
 
-pack37.png
+pack38.png
 	size: 2048, 2048
 BGART1
 	index: 70
@@ -430,7 +439,7 @@ BGART1
 	index: 71
 	bounds: 1, 1, 1280, 720
 
-pack38.png
+pack39.png
 	size: 2048, 2048
 002eaf3c4818892829803d19a6cefb82
 	bounds: 1, 735, 1200, 750

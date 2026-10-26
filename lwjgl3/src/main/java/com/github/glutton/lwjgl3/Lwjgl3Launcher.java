@@ -8,22 +8,36 @@ import com.badlogic.gdx.physics.box2d.Box2D;
 import com.github.glutton.GluttonGame;
 
 public class Lwjgl3Launcher {
+    public static void main(String[] args) {
+        Box2D.init();
 
-	public static void main(String[] args) {
-		Box2D.init();
+        Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
+        configuration.setTitle("Gluttony");
+        
+        Graphics.DisplayMode displayMode = Lwjgl3ApplicationConfiguration.getDisplayMode();
+        configuration.setWindowedMode(displayMode.width, displayMode.height);
+        configuration.setDecorated(false);
+        configuration.setResizable(false);
+        configuration.useVsync(true);
 
-		Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
-		configuration.setTitle("Gluttony");
-		
-		// Borderless Fullscreen: matches monitor resolution with no window borders
-		Graphics.DisplayMode displayMode = Lwjgl3ApplicationConfiguration.getDisplayMode();
-		configuration.setWindowedMode(displayMode.width, displayMode.height);
-		configuration.setDecorated(false); // Removes the window title bar and borders
-		
-		configuration.setResizable(false);
-		configuration.setHdpiMode(HdpiMode.Pixels);
-		configuration.useVsync(true);
+        configuration.setInitialVisible(false);
 
-		new Lwjgl3Application(new GluttonGame(), configuration);
-	}
+        GluttonGame game = new GluttonGame();
+
+        configuration.setWindowListener(new com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener() {
+            @Override
+            public void created(com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window window) {
+                game.setWindowRevealCallback(() -> window.setVisible(true));
+            }
+            @Override public void iconified(boolean isIconified) {}
+            @Override public void maximized(boolean isMaximized) {}
+            @Override public void focusLost() {}
+            @Override public void focusGained() {}
+            @Override public boolean closeRequested() { return true; }
+            @Override public void filesDropped(String[] files) {}
+            @Override public void refreshRequested() {}
+        });
+
+        new Lwjgl3Application(game, configuration);
+    }
 }

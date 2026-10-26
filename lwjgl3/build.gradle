@@ -66,7 +66,8 @@ run {
     workingDir = rootProject.file('assets').path
     jvmArgs += [
         "--enable-native-access=ALL-UNNAMED",
-        "-Dorg.lwjgl.util.Debug=true"
+        "-Dorg.lwjgl.util.Debug=true",
+        "-splash:scenes/LoadingScreenA.png" // Displays this the exact millisecond the JVM boots up
     ]
     if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
 }

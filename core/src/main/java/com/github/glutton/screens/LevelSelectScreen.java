@@ -26,19 +26,24 @@ public class LevelSelectScreen implements Screen {
 	private Viewport viewport;
 	private ItemWrapper rootWrapper;
 
+	// Exit Button
 	private TransformComponent exitTransform;
 	private DimensionsComponent exitDimensions;
-	private TintComponent exitHighlightTint;
+	private TintComponent exitTint;
 
+	// Book & Page Layout
 	private TransformComponent bookGuiTransform;
 	private TransformComponent rightPageTransform;
 
-	private TransformComponent nextPageTransform;
-	private DimensionsComponent nextPageDimensions;
-	private TintComponent nextPageHighlightTint;
-
+	// Play Button
 	private TransformComponent playTransform;
 	private DimensionsComponent playDimensions;
+	private TintComponent playTint;
+
+	// Next Page Button (hit-tested on the NextPage composite itself, not its inner icon)
+	private TransformComponent nextPageTransform;
+	private DimensionsComponent nextPageDimensions;
+	private TintComponent nextPageTint;
 
 	private final Vector3 mouseVector = new Vector3();
 
@@ -58,41 +63,63 @@ public class LevelSelectScreen implements Screen {
 		viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 		rootWrapper = new ItemWrapper(sceneLoader.getRoot(), sceneLoader.getEngine());
 
+		// 1. Exit Button
 		ItemWrapper exitBtn = rootWrapper.getChild("ExitButton");
 		if (isValid(exitBtn)) {
 			int entity = exitBtn.getEntity();
 			exitTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
 			exitDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
+
+			ItemWrapper exitPressed = exitBtn.getChild("Pressed");
+			if (isValid(exitPressed)) {
+				exitTint = ComponentRetriever.get(exitPressed.getEntity(), TintComponent.class, sceneLoader.getEngine());
+			}
+			if (exitTint == null) {
+				exitTint = ComponentRetriever.get(entity, TintComponent.class, sceneLoader.getEngine());
+			}
+			if (exitTint == null) {
+				exitTint = sceneLoader.getEngine().edit(entity).create(TintComponent.class);
+				exitTint.color.set(0.7f, 0.7f, 0.7f, 1f);
+			}
 		}
 
-		ItemWrapper exitHighlightBtn = rootWrapper.getChild("HIGHLIGHTEDExitButton");
-		if (isValid(exitHighlightBtn)) {
-			exitHighlightTint = ComponentRetriever.get(exitHighlightBtn.getEntity(), TintComponent.class, sceneLoader.getEngine());
-			if (exitHighlightTint != null) exitHighlightTint.color.a = 0f;
-		}
-
+		// 2. Nested Book GUI Elements
 		ItemWrapper bookGui = rootWrapper.getChild("BOOKGUI");
 		if (isValid(bookGui)) {
 			bookGuiTransform = ComponentRetriever.get(bookGui.getEntity(), TransformComponent.class, sceneLoader.getEngine());
-			
+
 			ItemWrapper rightPage = bookGui.getChild("RightPage");
 			if (isValid(rightPage)) {
 				rightPageTransform = ComponentRetriever.get(rightPage.getEntity(), TransformComponent.class, sceneLoader.getEngine());
 
+				// Play Button
 				ItemWrapper playBtn = rightPage.getChild("Play_Button");
 				if (isValid(playBtn)) {
 					int entity = playBtn.getEntity();
 					playTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
 					playDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
+					playTint = ComponentRetriever.get(entity, TintComponent.class, sceneLoader.getEngine());
+					if (playTint == null) {
+						playTint = sceneLoader.getEngine().edit(entity).create(TintComponent.class);
+						playTint.color.set(0.58f, 0.58f, 0.58f, 1f);
+					}
 				}
 
+				// Next Page Button — bounds come from the "NextPage" composite (the actual
+				// button entity, 48x48), tint comes from its inner "Next_Page" icon.
 				ItemWrapper nextPageComposite = rightPage.getChild("NextPage");
 				if (isValid(nextPageComposite)) {
-					ItemWrapper nextPageBtn = nextPageComposite.getChild("Next_Page");
-					if (isValid(nextPageBtn)) {
-						int entity = nextPageBtn.getEntity();
-						nextPageTransform = ComponentRetriever.get(entity, TransformComponent.class, sceneLoader.getEngine());
-						nextPageDimensions = ComponentRetriever.get(entity, DimensionsComponent.class, sceneLoader.getEngine());
+					int compositeEntity = nextPageComposite.getEntity();
+					nextPageTransform = ComponentRetriever.get(compositeEntity, TransformComponent.class, sceneLoader.getEngine());
+					nextPageDimensions = ComponentRetriever.get(compositeEntity, DimensionsComponent.class, sceneLoader.getEngine());
+
+					ItemWrapper nextPageIcon = nextPageComposite.getChild("Next_Page");
+					if (isValid(nextPageIcon)) {
+						nextPageTint = ComponentRetriever.get(nextPageIcon.getEntity(), TintComponent.class, sceneLoader.getEngine());
+					}
+					if (nextPageTint == null) {
+						nextPageTint = sceneLoader.getEngine().edit(compositeEntity).create(TintComponent.class);
+						nextPageTint.color.set(0.58f, 0.58f, 0.58f, 1f);
 					}
 				}
 			}
@@ -112,44 +139,69 @@ public class LevelSelectScreen implements Screen {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
 		viewport.apply();
+		sceneLoader.getEngine().setDelta(delta);
 		sceneLoader.getEngine().process();
 
-		updateHoverAndInput();
+		updateInput();
 	}
 
-	private void updateHoverAndInput() {
+	private void updateInput() {
 		mouseVector.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 		viewport.unproject(mouseVector);
+		boolean clicked = Gdx.input.justTouched();
 
+		// Exit Button (root-level, no parent offset needed)
 		if (exitTransform != null && exitDimensions != null) {
-			Rectangle bounds = getEntityBounds(exitTransform, exitDimensions, null, null);
-			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
-			if (exitHighlightTint != null) exitHighlightTint.color.a = isHovered ? 1f : 0f;
-			if (isHovered && Gdx.input.justTouched()) {
+			Rectangle exitBounds = new Rectangle(
+				exitTransform.x, exitTransform.y,
+				exitDimensions.width * exitTransform.scaleX,
+				exitDimensions.height * exitTransform.scaleY
+			);
+			boolean exitHovered = exitBounds.contains(mouseVector.x, mouseVector.y);
+
+			if (exitTint != null) {
+				exitTint.color.set(exitHovered ? 1.0f : 0.7f, exitHovered ? 1.0f : 0.7f, exitHovered ? 1.0f : 0.7f, 1.0f);
+			}
+			if (exitHovered && clicked) {
 				game.showMainMenu();
 			}
 		}
 
-		if (playTransform != null && playDimensions != null) {
-			Rectangle bounds = getEntityBounds(playTransform, playDimensions, bookGuiTransform, rightPageTransform);
-			boolean isHovered = bounds.contains(mouseVector.x, mouseVector.y);
-			if (isHovered && Gdx.input.justTouched()) {
+		// Play Button (BOOKGUI -> RightPage -> Play_Button, 1 level, direct sum)
+		if (playTransform != null && playDimensions != null && bookGuiTransform != null && rightPageTransform != null) {
+			float x = bookGuiTransform.x + rightPageTransform.x + playTransform.x;
+			float y = bookGuiTransform.y + rightPageTransform.y + playTransform.y;
+			float w = playDimensions.width * playTransform.scaleX;
+			float h = playDimensions.height * playTransform.scaleY;
+
+			Rectangle playBounds = new Rectangle(x, y, w, h);
+			boolean playHovered = playBounds.contains(mouseVector.x, mouseVector.y);
+
+			if (playTint != null) {
+				playTint.color.set(playHovered ? 1.0f : 0.58f, playHovered ? 1.0f : 0.58f, playHovered ? 1.0f : 0.58f, 1.0f);
+			}
+			if (playHovered && clicked) {
 				game.showPage1();
 			}
 		}
-	}
 
-	private Rectangle getEntityBounds(TransformComponent transform, DimensionsComponent dimensions, TransformComponent p1, TransformComponent p2) {
-		float p1X = (p1 != null) ? p1.x : 0f;
-		float p1Y = (p1 != null) ? p1.y : 0f;
-		float p2X = (p2 != null) ? p2.x : 0f;
-		float p2Y = (p2 != null) ? p2.y : 0f;
+		// Next Page Button (BOOKGUI -> RightPage -> NextPage composite, 1 level, direct sum)
+		if (nextPageTransform != null && nextPageDimensions != null && bookGuiTransform != null && rightPageTransform != null) {
+			float x = bookGuiTransform.x + rightPageTransform.x + nextPageTransform.x;
+			float y = bookGuiTransform.y + rightPageTransform.y + nextPageTransform.y;
+			float w = nextPageDimensions.width * nextPageTransform.scaleX;
+			float h = nextPageDimensions.height * nextPageTransform.scaleY;
 
-		float x = p1X + p2X + transform.x - (transform.originX * (transform.scaleX - 1));
-		float y = p1Y + p2Y + transform.y - (transform.originY * (transform.scaleY - 1));
-		float width = dimensions.width * transform.scaleX;
-		float height = dimensions.height * transform.scaleY;
-		return new Rectangle(x, y, width, height);
+			Rectangle nextBounds = new Rectangle(x, y, w, h);
+			boolean nextHovered = nextBounds.contains(mouseVector.x, mouseVector.y);
+
+			if (nextPageTint != null) {
+				nextPageTint.color.set(nextHovered ? 1.0f : 0.58f, nextHovered ? 1.0f : 0.58f, nextHovered ? 1.0f : 0.58f, 1.0f);
+			}
+			if (nextHovered && clicked) {
+				// TODO: handle next page action
+			}
+		}
 	}
 
 	@Override
@@ -157,12 +209,22 @@ public class LevelSelectScreen implements Screen {
 		viewport.update(width, height, true);
 	}
 
-	@Override public void pause() {}
-	@Override public void resume() {}
-	@Override public void hide() {}
+	@Override
+	public void pause() {
+	}
+
+	@Override
+	public void resume() {
+	}
+
+	@Override
+	public void hide() {
+	}
 
 	@Override
 	public void dispose() {
-		if (sceneLoader != null) sceneLoader = null;
+		if (sceneLoader != null) {
+			sceneLoader = null;
+		}
 	}
 }

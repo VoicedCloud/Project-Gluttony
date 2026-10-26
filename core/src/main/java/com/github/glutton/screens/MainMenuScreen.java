@@ -143,12 +143,32 @@ public class MainMenuScreen implements Screen {
             }
         }
 
+        if (settingsTransform != null && settingsDimensions != null) {
+            boolean isHovered = getBounds(settingsTransform, settingsDimensions, buttonsStackingTransform).contains(mouseVector.x, mouseVector.y);
+            if (settingsTint != null) {
+                settingsTint.color.set(isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f);
+            }
+            if (isHovered && clicked) {
+                // TODO: Hook up settings screen when ready
+            }
+        }
+
         if (exitTransform != null && exitDimensions != null) {
             boolean isHovered = getBounds(exitTransform, exitDimensions, buttonsStackingTransform).contains(mouseVector.x, mouseVector.y);
             if (exitTint != null) {
                 exitTint.color.set(isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f);
             }
             if (isHovered && clicked) Gdx.app.exit();
+        }
+
+        if (accountTransform != null && accountDimensions != null) {
+            boolean isHovered = getBounds(accountTransform, accountDimensions, null).contains(mouseVector.x, mouseVector.y);
+            if (accountTint != null) {
+                accountTint.color.set(isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f);
+            }
+            if (isHovered && clicked) {
+                // TODO: Hook up account action when ready
+            }
         }
     }
 
@@ -169,3 +189,4 @@ public class MainMenuScreen implements Screen {
         if (sceneLoader != null) sceneLoader = null;
     }
 }
+
