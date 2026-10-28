@@ -72,8 +72,8 @@ public class Page1Screen implements Screen {
     private final Rectangle menuButtonBounds = new Rectangle();
     private final Vector2 gameOverTouch = new Vector2();
 
-    private static final float ENEMY_WIDTH = 9.6f;
-    private static final float ENEMY_HEIGHT = 19.2f;
+    private static final float ENEMY_WIDTH = 24f;
+private static final float ENEMY_HEIGHT = 36f;
     private static final float ENEMY_SPAWN_X = 200f;
     private static final float ENEMY_SPAWN_Y = 150f;
 
@@ -117,6 +117,7 @@ private static final int FIRE_RATE_UPGRADE_BASE_COST = 120;
 
     @Override
     public void show() {
+        StatsTracker.startNewRun();
         Gdx.input.setCursorCatched(false);
         Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
 
@@ -329,8 +330,10 @@ private static final int FIRE_RATE_UPGRADE_BASE_COST = 120;
     bossSpawned = false;
 
     if (!waitingForNextWave) {
-        waitingForNextWave = true;
-        shopOpen = true;
+    StatsTracker.waveSurvived();
+
+    waitingForNextWave = true;
+    shopOpen = true;
         waveDelayTimer = BUY_TIME_SECONDS;
 
         shopMessage = "Wave cleared! Spend your currency before the next wave.";
@@ -643,20 +646,26 @@ private void spawnMixedWave(
             while (iterator.hasNext()) {
                 Enemy enemy = iterator.next();
 
-                if (enemy.isDestroyed()) {
-                    int reward = getEnemyReward(enemy);
-                    currency += reward;
-                    totalKills++;
+                if (enemy.isDestroyed()
+        && (!(enemy instanceof Zombie)
+        || ((Zombie) enemy).isDeathAnimationFinished())) {
 
-                    Gdx.app.log(
-                        "Rewards",
-                        "Enemy defeated! +" + reward
-                            + " currency. Total: " + currency
-                    );
+    int reward = getEnemyReward(enemy);
+    currency += reward;
+    totalKills++;
 
-                    enemy.disposeBody();
-                    iterator.remove();
-                }
+    StatsTracker.monsterKilled();
+    StatsTracker.earnCash(reward);
+
+    Gdx.app.log(
+        "Rewards",
+        "Enemy defeated! +" + reward
+            + " currency. Total: " + currency
+    );
+
+    enemy.disposeBody();
+    iterator.remove();
+}
             }
         }
 
@@ -691,10 +700,16 @@ private void spawnMixedWave(
             for (Enemy enemy : enemies) {
                 enemy.updateAI(safeDelta, playerState);
 
-                if (enemy.canAttack(playerX, playerY)) {
-                    int damage = enemy.getAttackDamage();
-                    playerState.takeDamage(damage);
-                }
+                if (!enemy.isDestroyed() && enemy.canAttack(playerX, playerY)) {
+
+    // Play the zombie's attack animation.
+    if (enemy instanceof Zombie) {
+        ((Zombie) enemy).triggerAttackAnimation();
+    }
+
+    int damage = enemy.getAttackDamage();
+    playerState.takeDamage(damage);
+}
             }
 
             handlePlayerDeath(playerState);
@@ -771,6 +786,19 @@ if (shopOpen
 }
 
 shapeRenderer.end();
+
+// Render animated zombie sprites.
+batch.setProjectionMatrix(camera.combined);
+batch.begin();
+
+for (Enemy enemy : enemies) {
+    if (enemy instanceof Zombie) {
+        ((Zombie) enemy).renderSprite(batch, safeDelta);
+    }
+}
+
+batch.end();
+
             renderEnemyHealthBars();
         }
 
@@ -887,9 +915,11 @@ shapeRenderer.end();
         deathCount++;
 
         if (deathCount >= MAX_DEATHS) {
-            gameOver = true;
+    gameOver = true;
 
-            Gdx.input.setCursorCatched(false);
+    StatsTracker.endRun();
+
+    Gdx.input.setCursorCatched(false);
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
             return;
         }
