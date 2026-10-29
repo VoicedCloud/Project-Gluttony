@@ -9,8 +9,8 @@ FreeButtons10
 FreeButtons11
 	bounds: 1, 73, 16, 16
 FreeButtons12
-	split: 0, 0, 0, 0
 	bounds: 19, 91, 16, 16
+	split: 0, 0, 0, 0
 FreeButtons13
 	bounds: 37, 109, 16, 16
 FreeButtons14
@@ -58,8 +58,8 @@ FreeButtons32
 FreeButtons33
 	bounds: 109, 109, 16, 16
 FreeButtons34
-	split: 3, 3, 6, 5
 	bounds: 19, 1, 16, 16
+	split: 3, 3, 6, 5
 FreeButtons35
 	bounds: 37, 19, 16, 16
 FreeButtons36
