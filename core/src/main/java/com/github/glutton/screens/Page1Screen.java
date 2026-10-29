@@ -557,7 +557,7 @@ public class Page1Screen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
+public void render(float delta) {
     game.revealWindowOnce();
 
     if (camera == null || viewport == null || batch == null) {
@@ -648,10 +648,17 @@ public class Page1Screen implements Screen {
             enemy.updateAI(safeDelta, playerState);
 
             if (!enemy.isDestroyed()
+                    && !enemy.isBodyDisposed()
                     && enemy.canAttack(playerX, playerY)) {
 
                 if (enemy instanceof Zombie) {
                     ((Zombie) enemy).triggerAttackAnimation();
+
+                } else if (enemy instanceof Ghoul) {
+                    ((Ghoul) enemy).triggerAttackAnimation();
+
+                } else if (enemy instanceof TargetDummy) {
+                    ((TargetDummy) enemy).playAttackAnimation();
                 }
 
                 int damage = enemy.getAttackDamage();
@@ -727,32 +734,47 @@ public class Page1Screen implements Screen {
         for (Enemy enemy : enemies) {
             // Sprite-based enemies render separately below.
             if (!(enemy instanceof Zombie)
-                    && !(enemy instanceof Hound)) {
+                    && !(enemy instanceof Hound)
+                    && !(enemy instanceof Ghoul)
+                    && !(enemy instanceof TargetDummy)) {
+
                 enemy.render(shapeRenderer);
             }
         }
 
+        shapeRenderer.end();
+
+        // Render the upgrade NPC.
         if (shopOpen
                 && upgradeNPC != null
                 && upgradeNPC.isActive()) {
-            batch.begin();
-upgradeNPC.render(batch, safeDelta);
-batch.end();
-        }
 
-        shapeRenderer.end();
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            upgradeNPC.render(batch, safeDelta);
+            batch.end();
+        }
 
         // Render animated enemy sprites.
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
         for (Enemy enemy : enemies) {
+            if (enemy.isDestroyed() || enemy.isBodyDisposed()) {
+                continue;
+            }
 
             if (enemy instanceof Zombie) {
                 ((Zombie) enemy).renderSprite(batch, safeDelta);
 
             } else if (enemy instanceof Hound) {
                 ((Hound) enemy).renderSprite(batch, safeDelta);
+
+            } else if (enemy instanceof Ghoul) {
+                ((Ghoul) enemy).renderSprite(batch, safeDelta);
+
+            } else if (enemy instanceof TargetDummy) {
+                ((TargetDummy) enemy).renderSprite(batch, safeDelta);
             }
         }
 
