@@ -1,3 +1,4 @@
+
 package com.github.glutton.entities;
 
 import com.badlogic.gdx.Gdx;
@@ -19,13 +20,9 @@ public class Zombie extends Enemy {
     private static final float HURT_FRAME_TIME = 0.10f;
     private static final float DEAD_FRAME_TIME = 0.14f;
 
-    // Keep the existing zombie sprite size unchanged.
-    // These dimensions are used for rendering the sprite.
     private static final float SPRITE_WIDTH = 32f;
     private static final float SPRITE_HEIGHT = 48f;
 
-    // Smaller collision hitbox.
-    // Change these to match the player's actual hitbox dimensions.
     private static final float HITBOX_WIDTH = 16f;
     private static final float HITBOX_HEIGHT = 24f;
 
@@ -57,6 +54,7 @@ public class Zombie extends Enemy {
 
     private boolean facingRight = true;
     private boolean deathAnimationFinished = false;
+    private boolean texturesDisposed = false;
 
     private enum AnimationState {
         IDLE,
@@ -230,7 +228,24 @@ public class Zombie extends Enemy {
     }
 
     public void renderSprite(SpriteBatch batch, float delta) {
-        animationTimer += delta;
+        if (batch == null || texturesDisposed || isBodyDisposed()) {
+            return;
+        }
+
+        /*
+         * IMPORTANT:
+         * Page1Screen must call batch.begin() before calling this method.
+         * Do not call batch.begin() or batch.end() here.
+         */
+        if (!batch.isDrawing()) {
+            Gdx.app.error(
+                "Zombie",
+                "renderSprite() called outside SpriteBatch.begin()/end()."
+            );
+            return;
+        }
+
+        animationTimer += Math.max(0f, delta);
 
         TextureRegion[][] frames;
         float frameTime;
@@ -268,6 +283,11 @@ public class Zombie extends Enemy {
         }
 
         int frameCount = frames[0].length;
+
+        if (frameCount == 0) {
+            return;
+        }
+
         int frame = (int) (animationTimer / frameTime);
 
         if (loop) {
@@ -283,22 +303,29 @@ public class Zombie extends Enemy {
 
         TextureRegion region = frames[0][frame];
 
-        // Keep the visible sprite at its original size.
-        // Only the Box2D hitbox is smaller.
         float drawWidth = SPRITE_WIDTH;
         float drawHeight = SPRITE_HEIGHT;
 
-        // Center the sprite horizontally over the enemy bounds.
         float drawX = bounds.x + (bounds.width - drawWidth) / 2f;
         float drawY = bounds.y;
 
-        batch.draw(
-            region,
-            facingRight ? drawX : drawX + drawWidth,
-            drawY,
-            facingRight ? drawWidth : -drawWidth,
-            drawHeight
-        );
+        if (facingRight) {
+            batch.draw(
+                region,
+                drawX,
+                drawY,
+                drawWidth,
+                drawHeight
+            );
+        } else {
+            batch.draw(
+                region,
+                drawX + drawWidth,
+                drawY,
+                -drawWidth,
+                drawHeight
+            );
+        }
     }
 
     public boolean isDeathAnimationFinished() {
@@ -307,10 +334,16 @@ public class Zombie extends Enemy {
 
     @Override
     public void render(ShapeRenderer shapeRenderer) {
-        // Zombie is rendered using its sprite sheet.
+        // Zombies are rendered using their sprite sheets.
     }
 
     public void disposeTextures() {
+        if (texturesDisposed) {
+            return;
+        }
+
+        texturesDisposed = true;
+
         idleTexture.dispose();
         walkTexture.dispose();
         attackTexture.dispose();

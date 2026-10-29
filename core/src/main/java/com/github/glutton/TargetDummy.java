@@ -135,13 +135,11 @@ public class TargetDummy extends Enemy {
         }
 
        // Face the direction the boss is moving.
-float velocityX = body.getLinearVelocity().x;
+// Always face toward the player.
+float bossCenterX = bounds.x + bounds.width / 2f;
+float playerCenterX = player.x + player.width / 2f;
 
-if (velocityX > 1f) {
-    facingRight = true;
-} else if (velocityX < -1f) {
-    facingRight = false;
-}
+facingRight = playerCenterX >= bossCenterX;
 
         // Finish the current attack animation before switching states.
         if (attackAnimationPlaying) {
@@ -225,22 +223,24 @@ if (velocityX > 1f) {
         float drawHeight = bounds.height;
 
         if (facingRight) {
-            batch.draw(
-                frame,
-                drawX + drawWidth,
-                drawY,
-                -drawWidth,
-                drawHeight
-            );
-        } else {
-            batch.draw(
-                frame,
-                drawX,
-                drawY,
-                drawWidth,
-                drawHeight
-            );
-        }
+    // Draw normally when facing right.
+    batch.draw(
+        frame,
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight
+    );
+} else {
+    // Flip horizontally when facing left.
+    batch.draw(
+        frame,
+        drawX + drawWidth,
+        drawY,
+        -drawWidth,
+        drawHeight
+    );
+}
     }
 
     @Override

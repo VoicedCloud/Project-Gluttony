@@ -40,4 +40,25 @@
 	cashEarned: 90
 	timestamp: 2026-10-30 05:20
 }
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 1
+	monstersKilled: 15
+	cashEarned: 153
+	timestamp: 2026-10-30 06:17
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 1
+	monstersKilled: 13
+	cashEarned: 133
+	timestamp: 2026-10-30 07:01
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 4
+	monstersKilled: 23
+	cashEarned: 236
+	timestamp: 2026-10-30 07:25
+}
 ]
