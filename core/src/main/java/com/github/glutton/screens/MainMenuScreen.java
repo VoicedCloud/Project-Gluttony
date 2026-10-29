@@ -147,22 +147,33 @@ public class MainMenuScreen implements Screen {
 				}
 			}
 
-			ItemWrapper statsRecentWrap = accountWindow.getChild("StatsRecent");
-			if (isValid(statsRecentWrap)) {
-				compRecent = getLabel(statsRecentWrap, "CompletionBooleanRecent");
-				pointsRecent = getLabel(statsRecentWrap, "PointsEarnedRecent");
-				monstersRecent = getLabel(statsRecentWrap, "MonstersKilledRecent");
-				wavesRecent = getLabel(statsRecentWrap, "WavesSurvivedRecent");
-			}
+// Traverse AccountWindow > Stats
+			ItemWrapper statsContainer = accountWindow.getChild("Stats");
+			if (isValid(statsContainer)) {
+				// Recent Stats: Stats > StatsRecent > StatsRecent
+				ItemWrapper statsRecentOuter = statsContainer.getChild("StatsRecent");
+				if (isValid(statsRecentOuter)) {
+					ItemWrapper statsRecentInner = statsRecentOuter.getChild("StatsRecent");
+					ItemWrapper targetRecent = isValid(statsRecentInner) ? statsRecentInner : statsRecentOuter;
 
-			ItemWrapper statsHighestWrap = accountWindow.getChild("Stats");
-			if (isValid(statsHighestWrap)) {
-				compHighest = getLabel(statsHighestWrap, "CompletionBooleanHighest");
-				pointsHighest = getLabel(statsHighestWrap, "PointsEarnedHighest");
-				monstersHighest = getLabel(statsHighestWrap, "MonstersKilledHighest");
-				wavesHighest = getLabel(statsHighestWrap, "WavesSurvivedHighest");
-			}
+					compRecent = getLabel(targetRecent, "CompletionBooleanRecent");
+					pointsRecent = getLabel(targetRecent, "PointsEarnedRecent");
+					monstersRecent = getLabel(targetRecent, "MonstersKilledRecent");
+					wavesRecent = getLabel(targetRecent, "WavesSurvivedRecent");
+				}
 
+				// Highest Stats: Stats > StatsHighest > Stats
+				ItemWrapper statsHighestOuter = statsContainer.getChild("StatsHighest");
+				if (isValid(statsHighestOuter)) {
+					ItemWrapper statsHighestInner = statsHighestOuter.getChild("Stats");
+					ItemWrapper targetHighest = isValid(statsHighestInner) ? statsHighestInner : statsHighestOuter;
+
+					compHighest = getLabel(targetHighest, "CompletionBooleanHighest");
+					pointsHighest = getLabel(targetHighest, "PointsEarnedHighest");
+					monstersHighest = getLabel(targetHighest, "MonstersKilledHighest");
+					wavesHighest = getLabel(targetHighest, "WavesSurvivedHighest");
+				}
+			}
 			ItemWrapper logoutBtn = accountWindow.getChild("LogOutButton");
 			if (isValid(logoutBtn)) {
 				logoutTransform = ComponentRetriever.get(logoutBtn.getEntity(), TransformComponent.class, sceneLoader.getEngine());
@@ -189,8 +200,15 @@ public class MainMenuScreen implements Screen {
 	private LabelComponent getLabel(ItemWrapper parent, String childName) {
 		ItemWrapper child = parent.getChild(childName);
 		if (isValid(child)) {
-			return ComponentRetriever.get(child.getEntity(), LabelComponent.class, sceneLoader.getEngine());
+			LabelComponent label = ComponentRetriever.get(child.getEntity(), LabelComponent.class, sceneLoader.getEngine());
+			if (label != null) {
+				Gdx.app.log("UIBinding", "Successfully bound label: " + childName);
+			} else {
+				Gdx.app.error("UIBinding", "Node found but LabelComponent is null for: " + childName);
+			}
+			return label;
 		}
+		Gdx.app.error("UIBinding", "Failed to find child node: " + childName);
 		return null;
 	}
 
@@ -234,7 +252,6 @@ public class MainMenuScreen implements Screen {
 			if (isAccountOpen) {
 				updateAccountUIData();
 
-				// Poll server every 1.5 seconds while waiting for browser login
 				if (isWaitingForBrowserLogin && !SessionManager.isLoggedIn()) {
 					pollTimer += delta;
 					if (pollTimer >= 1.5f) {
@@ -261,12 +278,13 @@ public class MainMenuScreen implements Screen {
 				isWaitingForBrowserLogin = false;
 				Gdx.app.log("Auth", "Successfully logged in via browser! User ID: " + userId);
 
-				// Fetch and populate stats immediately upon successful session verification
 				AuthClient.getStats(userId, new AuthClient.AuthListener() {
 					@Override
 					public void onSuccess(String msg, JsonValue statsData) {
+						Gdx.app.log("StatsDebug", "Raw Stats JSON: " + statsData.toString());
 						SessionManager.recentStats = statsData.get("recent");
 						SessionManager.highestStats = statsData.get("highest");
+						updateAccountUIData();
 						Gdx.app.log("Auth", "Server stats fetched successfully for UI.");
 					}
 
@@ -279,7 +297,6 @@ public class MainMenuScreen implements Screen {
 
 			@Override
 			public void onError(String message) {
-				// Still waiting for login on browser
 			}
 		});
 	}
@@ -303,7 +320,6 @@ public class MainMenuScreen implements Screen {
 		}
 
 		if (loggedIn) {
-			// --- SERVER STATS FOR ACCOUNTS ---
 			if (SessionManager.recentStats != null) {
 				if (compRecent != null) {
 					compRecent.setText(String.valueOf(SessionManager.recentStats.getInt("completion", 0)));
@@ -333,9 +349,8 @@ public class MainMenuScreen implements Screen {
 				}
 			}
 		} else {
-			// --- LOCAL STATS FOR GUESTS ---
 			if (compRecent != null) {
-				compRecent.setText("0"); // Guest local completion metric
+				compRecent.setText("0");
 			}
 			if (pointsRecent != null) {
 				pointsRecent.setText(String.valueOf(StatsTracker.getRecentCash()));
@@ -371,7 +386,6 @@ public class MainMenuScreen implements Screen {
 		if (isAccountOpen) {
 			boolean loggedIn = SessionManager.isLoggedIn();
 
-			// Handle LogOut Button Click (Only when logged in)
 			if (loggedIn && logoutTransform != null && logoutDimensions != null && accountWindowTransform != null) {
 				Rectangle logoutBounds = getBounds(logoutTransform, logoutDimensions, accountWindowTransform);
 				if (logoutBounds.contains(mouseVector.x, mouseVector.y) && clicked) {
@@ -380,7 +394,6 @@ public class MainMenuScreen implements Screen {
 				}
 			}
 
-			// Handle SignIn Button Click (Only when NOT logged in)
 			if (!loggedIn && signinTransform != null && signinDimensions != null && accountWindowTransform != null) {
 				Rectangle signinBounds = getBounds(signinTransform, signinDimensions, accountWindowTransform);
 				if (signinBounds.contains(mouseVector.x, mouseVector.y) && clicked) {
@@ -405,7 +418,6 @@ public class MainMenuScreen implements Screen {
 			return;
 		}
 
-		// --- NORMAL MAIN MENU INPUT ---
 		if (playTransform != null && playDimensions != null) {
 			boolean isHovered = getBounds(playTransform, playDimensions, buttonsStackingTransform).contains(mouseVector.x, mouseVector.y);
 			if (playTint != null) {
@@ -443,6 +455,22 @@ public class MainMenuScreen implements Screen {
 			}
 			if (isHovered && clicked) {
 				isAccountOpen = true;
+				if (SessionManager.isLoggedIn()) {
+					AuthClient.getStats(SessionManager.getUserId(), new AuthClient.AuthListener() {
+						@Override
+						public void onSuccess(String message, JsonValue data) {
+							Gdx.app.log("StatsDebug", "Raw Stats JSON: " + data.toString());
+							SessionManager.recentStats = data.get("recent");
+							SessionManager.highestStats = data.get("highest");
+							updateAccountUIData(); // <--- Refresh UI immediately here!
+						}
+
+						@Override
+						public void onError(String message) {
+							Gdx.app.error("Auth", "Failed to fetch stats: " + message);
+						}
+					});
+				}
 			}
 		}
 	}
