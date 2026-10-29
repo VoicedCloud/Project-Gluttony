@@ -10,7 +10,7 @@ Book_GluttonUI
 	bounds: 203, 1, 162, 96
 	split: 11, 11, 3, 13
 DarkCircle.
-	bounds: 2023, 2001, 13, 13
+	bounds: 2023, 1965, 13, 13
 	split: 3, 3, 3, 3
 Dead
 	index: 0
@@ -27,6 +27,23 @@ Dead
 Dead
 	index: 4
 	bounds: 723, 99, 128, 128
+ForWindows1
+	bounds: 2023, 1950, 13, 13
+	split: 2, 2, 2, 2
+ForWindows2
+	bounds: 2023, 1935, 13, 13
+ForWindows3
+	bounds: 2023, 2015, 17, 16
+	split: 7, 7, 7, 7
+ForWindows4
+	bounds: 2023, 1920, 13, 13
+	split: 1, 1, 1, 1
+ForWindows5
+	bounds: 1923, 1952, 13, 13
+	split: 1, 1, 1, 1
+ForWindows5AndMaybeHotbarsToo
+	split: 3, 3, 3, 3
+	bounds: 2023, 1997, 16, 16
 Hurt
 	index: 0
 	bounds: 853, 99, 128, 128
@@ -59,7 +76,7 @@ PlaceHolderBackgroundMainMenu
 Rat_Typewriter
 	bounds: 1283, 437, 512, 512
 Revolver - Colt 45 [64x32]
-	bounds: 1973, 1949, 64, 32
+	bounds: 1923, 1899, 64, 32
 Run
 	index: 0
 	bounds: 1673, 307, 128, 128
@@ -98,9 +115,11 @@ Stratis Sedria (Brown) - Full Car
 ThickGround
 	bounds: 1923, 1967, 48, 64
 Tools_Crafting_Writing_Pen_Quill_Feather
-	bounds: 2023, 2016, 15, 15
+	bounds: 2023, 1980, 15, 15
+user-c-os-353016
+	bounds: 1973, 1933, 48, 48
 white-pixel
-	bounds: 2040, 2030, 1, 1
+	bounds: 2042, 2030, 1, 1
 wood_texture_full_screen
 	bounds: 1373, 49, 256, 256
 	split: 0, 0, 0, 0

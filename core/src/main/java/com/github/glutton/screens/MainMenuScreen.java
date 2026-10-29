@@ -25,6 +25,7 @@ public class MainMenuScreen implements Screen {
     private OrthographicCamera camera;
     private SceneLoader sceneLoader;
 
+    // Main Menu Buttons
     private TransformComponent buttonsStackingTransform;
     private TransformComponent playTransform;
     private DimensionsComponent playDimensions;
@@ -41,6 +42,15 @@ public class MainMenuScreen implements Screen {
     private TransformComponent accountTransform;
     private DimensionsComponent accountDimensions;
     private TintComponent accountTint;
+
+    // Account Window & Elements
+    private boolean isAccountOpen = false;
+    private TransformComponent accountWindowTransform;
+    private DimensionsComponent accountWindowDimensions;
+
+    private TransformComponent logoutTransform;
+    private DimensionsComponent logoutDimensions;
+    private TintComponent logoutTint;
 
     private final Vector3 mouseVector = new Vector3();
 
@@ -60,8 +70,9 @@ public class MainMenuScreen implements Screen {
         sceneLoader.loadScene("MainMenu", viewport);
 
         ItemWrapper mainRoot = new ItemWrapper(sceneLoader.getRoot(), sceneLoader.getEngine());
+        
+        // 1. Buttons Stacking
         ItemWrapper buttonsStacking = mainRoot.getChild("Buttons Stacking");
-
         if (isValid(buttonsStacking)) {
             buttonsStackingTransform = ComponentRetriever.get(buttonsStacking.getEntity(), TransformComponent.class, sceneLoader.getEngine());
 
@@ -87,11 +98,45 @@ public class MainMenuScreen implements Screen {
             }
         }
 
+        // 2. Account Button
         ItemWrapper account = mainRoot.getChild("AccountButton");
         if (isValid(account)) {
             accountTransform = ComponentRetriever.get(account.getEntity(), TransformComponent.class, sceneLoader.getEngine());
             accountDimensions = ComponentRetriever.get(account.getEntity(), DimensionsComponent.class, sceneLoader.getEngine());
             accountTint = ComponentRetriever.get(account.getEntity(), TintComponent.class, sceneLoader.getEngine());
+        }
+
+        // 3. Account Window Overlay & LogOut Button
+        ItemWrapper accountWindow = mainRoot.getChild("AccountWindow");
+        if (isValid(accountWindow)) {
+            int windowEntity = accountWindow.getEntity();
+            accountWindowTransform = ComponentRetriever.get(windowEntity, TransformComponent.class, sceneLoader.getEngine());
+            accountWindowDimensions = ComponentRetriever.get(windowEntity, DimensionsComponent.class, sceneLoader.getEngine());
+
+            ItemWrapper logoutBtn = accountWindow.getChild("LogOutButton");
+            if (isValid(logoutBtn)) {
+                int logoutEntity = logoutBtn.getEntity();
+                logoutTransform = ComponentRetriever.get(logoutEntity, TransformComponent.class, sceneLoader.getEngine());
+                logoutDimensions = ComponentRetriever.get(logoutEntity, DimensionsComponent.class, sceneLoader.getEngine());
+                
+                // Traverse through Composite Item to reach LogoutBG
+                ItemWrapper compositeItem = logoutBtn.getChild("Composite Item");
+                ItemWrapper logoutBg = isValid(compositeItem) ? compositeItem.getChild("LogoutBG") : null;
+                if (!isValid(logoutBg)) {
+                    logoutBg = logoutBtn.getChild("LogoutBG");
+                }
+                
+                if (isValid(logoutBg)) {
+                    logoutTint = ComponentRetriever.get(logoutBg.getEntity(), TintComponent.class, sceneLoader.getEngine());
+                }
+                if (logoutTint == null) {
+                    logoutTint = ComponentRetriever.get(logoutEntity, TintComponent.class, sceneLoader.getEngine());
+                }
+                if (logoutTint == null) {
+                    logoutTint = sceneLoader.getEngine().edit(logoutEntity).create(TintComponent.class);
+                    logoutTint.color.set(0.58f, 0.58f, 0.58f, 1f);
+                }
+            }
         }
     }
 
@@ -121,6 +166,12 @@ public class MainMenuScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        if (accountWindowTransform != null) {
+            float targetScale = isAccountOpen ? 1.0f : 0.0f;
+            accountWindowTransform.scaleX = targetScale;
+            accountWindowTransform.scaleY = targetScale;
+        }
+
         sceneLoader.getEngine().setDelta(delta);
         sceneLoader.getEngine().process();
 
@@ -133,6 +184,41 @@ public class MainMenuScreen implements Screen {
         
         boolean clicked = Gdx.input.justTouched();
 
+        if (isAccountOpen) {
+            // --- ACCOUNT WINDOW OPEN: Handle overlay interactions & block background ---
+            if (logoutTransform != null && logoutDimensions != null && accountWindowTransform != null) {
+                Rectangle logoutBounds = getBounds(logoutTransform, logoutDimensions, accountWindowTransform);
+                boolean logoutHovered = logoutBounds.contains(mouseVector.x, mouseVector.y);
+
+                if (logoutTint != null) {
+                    logoutTint.color.set(
+                        logoutHovered ? 1.0f : 0.58f, 
+                        logoutHovered ? 0.3f : 0.58f, 
+                        logoutHovered ? 0.3f : 0.58f, 
+                        1.0f
+                    );
+                }
+                if (logoutHovered && clicked) {
+                    Gdx.app.log("Account", "Logged out successfully!");
+                    isAccountOpen = false;
+                }
+            }
+
+            // Click outside AccountWindow bounds to close
+            if (clicked && accountWindowTransform != null && accountWindowDimensions != null) {
+                Rectangle windowBounds = new Rectangle(
+                    accountWindowTransform.x, accountWindowTransform.y,
+                    accountWindowDimensions.width * accountWindowTransform.scaleX,
+                    accountWindowDimensions.height * accountWindowTransform.scaleY
+                );
+                if (!windowBounds.contains(mouseVector.x, mouseVector.y)) {
+                    isAccountOpen = false;
+                }
+            }
+            return;
+        }
+
+        // --- NORMAL MAIN MENU INPUT ---
         if (playTransform != null && playDimensions != null) {
             boolean isHovered = getBounds(playTransform, playDimensions, buttonsStackingTransform).contains(mouseVector.x, mouseVector.y);
             if (playTint != null) {
@@ -167,7 +253,7 @@ public class MainMenuScreen implements Screen {
                 accountTint.color.set(isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f);
             }
             if (isHovered && clicked) {
-                // TODO: Hook up account action when ready
+                isAccountOpen = true;
             }
         }
     }
@@ -189,4 +275,3 @@ public class MainMenuScreen implements Screen {
         if (sceneLoader != null) sceneLoader = null;
     }
 }
-
