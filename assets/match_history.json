@@ -1,0 +1,43 @@
+[
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 7
+	monstersKilled: 105
+	cashEarned: 1185
+	timestamp: 2026-10-29 21:21
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 5
+	monstersKilled: 46
+	cashEarned: 571
+	timestamp: 2026-10-29 21:38
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 1
+	monstersKilled: 10
+	cashEarned: 103
+	timestamp: 2026-10-29 21:54
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 2
+	monstersKilled: 20
+	cashEarned: 206
+	timestamp: 2026-10-30 05:17
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 1
+	monstersKilled: 18
+	cashEarned: 186
+	timestamp: 2026-10-30 05:20
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	monstersKilled: 9
+	cashEarned: 90
+	timestamp: 2026-10-30 05:20
+}
+]

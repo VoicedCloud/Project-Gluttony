@@ -1,116 +1,128 @@
 package com.github.glutton.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Json;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class StatsTracker {
 
-    private static final Preferences stats =
-            Gdx.app.getPreferences("ProjectGluttonyStats");
+    private static final String HISTORY_FILE = "match_history.json";
+    private static final Json json = new Json();
 
-    // Current playthrough statistics
+    // Active playthrough counters
     private static int wavesSurvived = 0;
     private static int monstersKilled = 0;
     private static int cashEarned = 0;
 
-    // Highest overall records
-    private static int highestWaves =
-            stats.getInteger("highestWaves", 0);
-
-    private static int highestKills =
-            stats.getInteger("highestKills", 0);
-
-    private static int highestCash =
-            stats.getInteger("highestCash", 0);
-
-    // Most recent playthrough
-    private static int recentWaves =
-            stats.getInteger("recentWaves", 0);
-
-    private static int recentKills =
-            stats.getInteger("recentKills", 0);
-
-    private static int recentCash =
-            stats.getInteger("recentCash", 0);
-
-    // Start a new playthrough
     public static void startNewRun() {
         wavesSurvived = 0;
         monstersKilled = 0;
         cashEarned = 0;
-
-        System.out.println("New playthrough started!");
     }
 
-    // Record a successfully completed wave
     public static void waveSurvived() {
         wavesSurvived++;
     }
 
-    // Record a monster kill
     public static void monsterKilled() {
         monstersKilled++;
     }
 
-    // Record cash earned from monster rewards
     public static void earnCash(int amount) {
         if (amount > 0) {
             cashEarned += amount;
         }
     }
 
-    // Save statistics when the playthrough ends
+    // Called when the run ends; appends this match to the local JSON history list
     public static void endRun() {
+        Array<MatchRecord> history = loadHistory();
 
-        // Update highest records independently
-        highestWaves = Math.max(
-                highestWaves, wavesSurvived);
+        MatchRecord record = new MatchRecord();
+        record.userId = 0; // Guest local storage
+        record.wavesSurvived = wavesSurvived;
+        record.monstersKilled = monstersKilled;
+        record.cashEarned = cashEarned;
 
-        highestKills = Math.max(
-                highestKills, monstersKilled);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        record.timestamp = dtf.format(LocalDateTime.now());
 
-        highestCash = Math.max(
-                highestCash, cashEarned);
+        history.add(record);
 
-        // Update most recent playthrough
-        recentWaves = wavesSurvived;
-        recentKills = monstersKilled;
-        recentCash = cashEarned;
+        FileHandle file = Gdx.files.local(HISTORY_FILE);
+        file.writeString(json.prettyPrint(history), false);
 
-        // Save highest overall records
-        stats.putInteger("highestWaves", highestWaves);
-        stats.putInteger("highestKills", highestKills);
-        stats.putInteger("highestCash", highestCash);
-
-        // Save most recent statistics
-        stats.putInteger("recentWaves", recentWaves);
-        stats.putInteger("recentKills", recentKills);
-        stats.putInteger("recentCash", recentCash);
-
-        stats.flush();
-
-        printStats();
+        System.out.println("Match recorded locally! Total stored runs: " + history.size);
     }
 
-    // Print statistics in the NetBeans Output window
-    public static void printStats() {
+    public static Array<MatchRecord> loadHistory() {
+        FileHandle file = Gdx.files.local(HISTORY_FILE);
+        if (!file.exists()) {
+            return new Array<>();
+        }
+        try {
+            return json.fromJson(Array.class, MatchRecord.class, file.readString());
+        } catch (Exception e) {
+            Gdx.app.error("StatsTracker", "Failed to parse match history JSON", e);
+            return new Array<>();
+        }
+    }
 
-        System.out.println();
-        System.out.println("========== PROJECT-GLUTTONY STATS ==========");
+    // --- RECENT STATS (Gets the last played match) ---
+    public static int getRecentWaves() {
+        Array<MatchRecord> history = loadHistory();
+        if (history.size == 0) return 0;
+        return history.peek().wavesSurvived;
+    }
 
-        System.out.println();
-        System.out.println("HIGHEST OVERALL STATS");
-        System.out.println("Waves Survived : " + highestWaves);
-        System.out.println("Monsters Killed: " + highestKills);
-        System.out.println("Cash Earned    : " + highestCash);
+    public static int getRecentMonsters() {
+        Array<MatchRecord> history = loadHistory();
+        if (history.size == 0) return 0;
+        return history.peek().monstersKilled;
+    }
 
-        System.out.println();
-        System.out.println("MOST RECENT PLAYTHROUGH");
-        System.out.println("Waves Survived : " + recentWaves);
-        System.out.println("Monsters Killed: " + recentKills);
-        System.out.println("Cash Earned    : " + recentCash);
+    public static int getRecentCash() {
+        Array<MatchRecord> history = loadHistory();
+        if (history.size == 0) return 0;
+        return history.peek().cashEarned;
+    }
 
-        System.out.println("============================================");
-        System.out.println();
+    public static int getRecentCompletion() {
+        return 0; // Default completion boolean/metric
+    }
+
+    // --- HIGHEST STATS (Scans history for max values) ---
+    public static int getHighestWaves() {
+        Array<MatchRecord> history = loadHistory();
+        int max = 0;
+        for (MatchRecord r : history) {
+            if (r.wavesSurvived > max) max = r.wavesSurvived;
+        }
+        return max;
+    }
+
+    public static int getHighestMonsters() {
+        Array<MatchRecord> history = loadHistory();
+        int max = 0;
+        for (MatchRecord r : history) {
+            if (r.monstersKilled > max) max = r.monstersKilled;
+        }
+        return max;
+    }
+
+    public static int getHighestCash() {
+        Array<MatchRecord> history = loadHistory();
+        int max = 0;
+        for (MatchRecord r : history) {
+            if (r.cashEarned > max) max = r.cashEarned;
+        }
+        return max;
+    }
+
+    public static int getHighestCompletion() {
+        return 0;
     }
 }
