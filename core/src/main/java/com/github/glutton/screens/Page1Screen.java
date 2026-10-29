@@ -53,8 +53,7 @@ public class Page1Screen implements Screen {
 	private OrthographicCamera camera;
 	private OrthographicCamera hudCamera;
 
-	private final Map<WeaponProfile, Texture> hudWeaponTextures
-		= new EnumMap<>(WeaponProfile.class);
+	private final Map<WeaponProfile, Texture> hudWeaponTextures = new EnumMap<>(WeaponProfile.class);
 
 	private SpriteBatch batch;
 	private ShapeRenderer shapeRenderer;
@@ -73,8 +72,8 @@ public class Page1Screen implements Screen {
 	private final Rectangle menuButtonBounds = new Rectangle();
 	private final Vector2 gameOverTouch = new Vector2();
 
-	private static final float ENEMY_WIDTH = 9.6f;
-	private static final float ENEMY_HEIGHT = 19.2f;
+	private static final float ENEMY_WIDTH = 24f;
+	private static final float ENEMY_HEIGHT = 36f;
 	private static final float ENEMY_SPAWN_X = 200f;
 	private static final float ENEMY_SPAWN_Y = 150f;
 
@@ -89,8 +88,8 @@ public class Page1Screen implements Screen {
 	private int totalKills = 0;
 	private int currency = 0;
 	// ==================================================
-// INFINITE WAVES AND BOSS SYSTEM
-// ==================================================
+	// INFINITE WAVES AND BOSS SYSTEM
+	// ==================================================
 
 	private boolean bossSpawned = false;
 
@@ -116,6 +115,7 @@ public class Page1Screen implements Screen {
 
 	@Override
 	public void show() {
+		StatsTracker.startNewRun();
 		Gdx.input.setCursorCatched(false);
 		Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
 
@@ -124,17 +124,15 @@ public class Page1Screen implements Screen {
 
 		hudCamera = new OrthographicCamera();
 		hudCamera.setToOrtho(
-			false,
-			Gdx.graphics.getWidth(),
-			Gdx.graphics.getHeight()
-		);
+				false,
+				Gdx.graphics.getWidth(),
+				Gdx.graphics.getHeight());
 
 		viewport = new FitViewport(1280f, 720f, camera);
 		viewport.update(
-			Gdx.graphics.getWidth(),
-			Gdx.graphics.getHeight(),
-			true
-		);
+				Gdx.graphics.getWidth(),
+				Gdx.graphics.getHeight(),
+				true);
 
 		background = new ParallaxBackground(camera.position.y);
 
@@ -143,8 +141,7 @@ public class Page1Screen implements Screen {
 
 		if (sceneLoader.getWorld() != null) {
 			sceneLoader.getWorld().setGravity(
-				new Vector2(0f, PhysicsConfig.GRAVITY_Y)
-			);
+					new Vector2(0f, PhysicsConfig.GRAVITY_Y));
 		}
 
 		batch = new SpriteBatch();
@@ -157,34 +154,29 @@ public class Page1Screen implements Screen {
 		for (WeaponProfile weapon : WeaponProfile.values()) {
 			try {
 				hudWeaponTextures.put(
-					weapon,
-					new Texture(Gdx.files.internal(weapon.idleTexturePath))
-				);
+						weapon,
+						new Texture(Gdx.files.internal(weapon.idleTexturePath)));
 			} catch (Exception missingWeaponSprite) {
 				try {
 					hudWeaponTextures.put(
-						weapon,
-						new Texture(
-							Gdx.files.internal("sprites/weapons/Glock - P80.png")
-						)
-					);
+							weapon,
+							new Texture(
+									Gdx.files.internal("sprites/weapons/Glock - P80.png")));
 				} catch (Exception missingFallback) {
 					Gdx.app.error(
-						"HUD",
-						"Could not load HUD weapon sprite for "
-						+ weapon.displayName,
-						missingFallback
-					);
+							"HUD",
+							"Could not load HUD weapon sprite for "
+									+ weapon.displayName,
+							missingFallback);
 				}
 			}
 		}
 
 		gameplaySession = new GameplaySession(
-			camera,
-			"sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
-			"sprites/weapons/01 - Individual sprites/Bullets & Ammo/Glock - P80/Bullet.png",
-			sceneLoader
-		);
+				camera,
+				"sprites/weapons/01 - Individual sprites/Guns/Glock - P80 [64x48].png",
+				"sprites/weapons/01 - Individual sprites/Bullets & Ammo/Glock - P80/Bullet.png",
+				sceneLoader);
 
 		startNextWave();
 	}
@@ -241,30 +233,27 @@ public class Page1Screen implements Screen {
 		switch (enemyType.toLowerCase()) {
 			case "zombie":
 				return new Zombie(
-					sceneLoader.getWorld(),
-					x,
-					y,
-					ENEMY_WIDTH,
-					ENEMY_HEIGHT
-				);
+						sceneLoader.getWorld(),
+						x,
+						y,
+						ENEMY_WIDTH,
+						ENEMY_HEIGHT);
 
 			case "ghoul":
 				return new Ghoul(
-					sceneLoader.getWorld(),
-					x,
-					y,
-					ENEMY_WIDTH,
-					ENEMY_HEIGHT
-				);
+						sceneLoader.getWorld(),
+						x,
+						y,
+						ENEMY_WIDTH,
+						ENEMY_HEIGHT);
 
 			case "hound":
 				return new Hound(
-					sceneLoader.getWorld(),
-					x,
-					y,
-					ENEMY_WIDTH,
-					ENEMY_HEIGHT
-				);
+						sceneLoader.getWorld(),
+						x,
+						y,
+						ENEMY_WIDTH,
+						ENEMY_HEIGHT);
 
 			default:
 				Gdx.app.error("Waves", "Unknown enemy type: " + enemyType);
@@ -291,29 +280,27 @@ public class Page1Screen implements Screen {
 
 			// Boss health increases slightly every boss milestone.
 			int bossHealth = BOSS_MAX_HEALTH
-				+ ((currentWave / 5) - 1) * 250;
+					+ ((currentWave / 5) - 1) * 250;
 
 			TargetDummy boss = new TargetDummy(
-				sceneLoader.getWorld(),
-				spawnX,
-				spawnY,
-				bossWidth,
-				bossHeight,
-				bossHealth,
-				BOSS_BASE_DAMAGE,
-				250f,
-				40f,
-				1f
-			);
+					sceneLoader.getWorld(),
+					spawnX,
+					spawnY,
+					bossWidth,
+					bossHeight,
+					bossHealth,
+					BOSS_BASE_DAMAGE,
+					250f,
+					40f,
+					1f);
 
 			enemies.add(boss);
 		}
 
 		Gdx.app.log(
-			"Waves",
-			"Wave " + currentWave + ": spawned "
-			+ bossCount + " boss(es)."
-		);
+				"Waves",
+				"Wave " + currentWave + ": spawned "
+						+ bossCount + " boss(es).");
 	}
 
 	private void updateWaveProgress(float delta) {
@@ -331,7 +318,12 @@ public class Page1Screen implements Screen {
 			shopOpen = true;
 			waveDelayTimer = BUY_TIME_SECONDS;
 
-			shopMessage = "Wave cleared! Spend your currency before the next wave.";
+    if (!waitingForNextWave) {
+    StatsTracker.waveSurvived();
+
+    waitingForNextWave = true;
+    shopOpen = true;
+        waveDelayTimer = BUY_TIME_SECONDS;
 
 			// Spawn an upgrade NPC after every third cleared wave.
 			if (currentWave % 3 == 0 && gameplaySession != null) {
@@ -610,205 +602,194 @@ public class Page1Screen implements Screen {
 		// Reveal the hidden window on the exact frame the loading screen draws
 		game.revealWindowOnce();
 
-		timer += delta;
+            Iterator<Enemy> iterator = enemies.iterator();
 
-		Gdx.gl.glClearColor(0.02f, 0.02f, 0.03f, 1f);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		if (camera == null || viewport == null || batch == null) {
-			return;
-		}
+            while (iterator.hasNext()) {
+                Enemy enemy = iterator.next();
 
-		float safeDelta = Math.min(Math.max(delta, 0f), 0.1f);
+                if (enemy.isDestroyed()
+        && (!(enemy instanceof Zombie)
+        || ((Zombie) enemy).isDeathAnimationFinished())) {
 
-		Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    int reward = getEnemyReward(enemy);
+    currency += reward;
+    totalKills++;
 
-		if (!gameOver && Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
-			debugHitbox = !debugHitbox;
-		}
+    StatsTracker.monsterKilled();
+    StatsTracker.earnCash(reward);
 
-		PlayerState playerState = null;
+    Gdx.app.log(
+        "Rewards",
+        "Enemy defeated! +" + reward
+            + " currency. Total: " + currency
+    );
 
-		if (gameplaySession != null) {
-			playerState = gameplaySession.getPlayerState();
+    enemy.disposeBody();
+    iterator.remove();
+}
+            }
+        }
 
-			if (!gameOver) {
-				gameplaySession.update(safeDelta, enemies);
-				playerState = gameplaySession.getPlayerState();
-			}
-		}
+        if (!gameOver) {
+            updateWaveProgress(safeDelta);
+        }
 
-		// Remove defeated enemies and award currency.
-		if (!gameOver
-			&& sceneLoader != null
-			&& sceneLoader.getWorld() != null
-			&& !sceneLoader.getWorld().isLocked()) {
+        // Freeze physics after Game Over.
+        if (!gameOver
+                && sceneLoader != null
+                && sceneLoader.getWorld() != null) {
 
-			Iterator<Enemy> iterator = enemies.iterator();
+            float subDelta =
+                safeDelta / PhysicsConfig.PHYSICS_SUBSTEPS;
 
-			while (iterator.hasNext()) {
-				Enemy enemy = iterator.next();
+            for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
+                sceneLoader.getWorld().step(
+                    subDelta,
+                    PhysicsConfig.VELOCITY_ITERATIONS,
+                    PhysicsConfig.POSITION_ITERATIONS
+                );
+            }
 
-				if (enemy.isDestroyed()) {
-					int reward = getEnemyReward(enemy);
-					currency += reward;
-					totalKills++;
+            
+        }
 
-					Gdx.app.log(
-						"Rewards",
-						"Enemy defeated! +" + reward
-						+ " currency. Total: " + currency
-					);
+        // Enemy AI and attacks.
+        if (playerState != null && !gameOver) {
+            float playerX = playerState.x;
+            float playerY = playerState.y;
 
-					enemy.disposeBody();
-					iterator.remove();
-				}
-			}
-		}
+            for (Enemy enemy : enemies) {
+                enemy.updateAI(safeDelta, playerState);
 
-		if (!gameOver) {
-			updateWaveProgress(safeDelta);
-		}
+                if (!enemy.isDestroyed() && enemy.canAttack(playerX, playerY)) {
 
-		// Freeze physics after Game Over.
-		if (!gameOver
-			&& sceneLoader != null
-			&& sceneLoader.getWorld() != null) {
+    // Play the zombie's attack animation.
+    if (enemy instanceof Zombie) {
+        ((Zombie) enemy).triggerAttackAnimation();
+    }
 
-			float subDelta
-				= safeDelta / PhysicsConfig.PHYSICS_SUBSTEPS;
+    int damage = enemy.getAttackDamage();
+    playerState.takeDamage(damage);
+}
+            }
 
-			for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
-				sceneLoader.getWorld().step(
-					subDelta,
-					PhysicsConfig.VELOCITY_ITERATIONS,
-					PhysicsConfig.POSITION_ITERATIONS
-				);
-			}
+            handlePlayerDeath(playerState);
 
-		}
+            camera.position.set(
+                playerState.x,
+                playerState.y + 32f,
+                0f
+            );
+        }
 
-		// Enemy AI and attacks.
-		if (playerState != null && !gameOver) {
-			float playerX = playerState.x;
-			float playerY = playerState.y;
+        camera.update();
+        viewport.apply();
 
-			for (Enemy enemy : enemies) {
-				enemy.updateAI(safeDelta, playerState);
+        float viewWidth = camera.viewportWidth * camera.zoom;
+        float viewHeight = camera.viewportHeight * camera.zoom;
 
-				if (enemy.canAttack(playerX, playerY)) {
-					int damage = enemy.getAttackDamage();
-					playerState.takeDamage(damage);
-				}
-			}
+        float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+        float cameraBottomEdge = camera.position.y - viewHeight / 2f;
 
-			handlePlayerDeath(playerState);
+        // Background.
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
 
-			camera.position.set(
-				playerState.x,
-				playerState.y + 32f,
-				0f
-			);
-		}
+        if (background != null) {
+            background.draw(
+                batch,
+                camera.position.x,
+                camera.position.y,
+                cameraLeftEdge,
+                cameraBottomEdge,
+                viewWidth,
+                viewHeight
+            );
+        }
 
-		camera.update();
-		viewport.apply();
+        batch.end();
 
-		float viewWidth = camera.viewportWidth * camera.zoom;
-		float viewHeight = camera.viewportHeight * camera.zoom;
+        // Level scene.
+        if (!gameOver
+                && sceneLoader != null
+                && sceneLoader.getEngine() != null) {
 
-		float cameraLeftEdge = camera.position.x - viewWidth / 2f;
-		float cameraBottomEdge = camera.position.y - viewHeight / 2f;
+            sceneLoader.getEngine().setDelta(safeDelta);
+            sceneLoader.getEngine().process();
+        }
 
-		// Background.
-		batch.setProjectionMatrix(camera.combined);
-		batch.begin();
+        // Player, weapons, bullets, and enemies.
+        if (gameplaySession != null) {
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            gameplaySession.render(batch, shapeRenderer);
+            batch.end();
 
-		if (background != null) {
-			background.draw(
-				batch,
-				camera.position.x,
-				camera.position.y,
-				cameraLeftEdge,
-				cameraBottomEdge,
-				viewWidth,
-				viewHeight
-			);
-		}
+            gameplaySession.renderTrails(
+                shapeRenderer,
+                camera.combined
+            );
 
-		batch.end();
+            shapeRenderer.setProjectionMatrix(camera.combined);
+shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-		// Level scene.
-		if (!gameOver
-			&& sceneLoader != null
-			&& sceneLoader.getEngine() != null) {
+gameplaySession.renderMuzzleFlash(shapeRenderer);
 
-			sceneLoader.getEngine().setDelta(safeDelta);
-			sceneLoader.getEngine().process();
-		}
-
-		// Player, weapons, bullets, and enemies.
-		if (gameplaySession != null) {
-			batch.setProjectionMatrix(camera.combined);
-			batch.begin();
-			gameplaySession.render(batch, shapeRenderer);
-			batch.end();
-
-			gameplaySession.renderTrails(
-				shapeRenderer,
-				camera.combined
-			);
-
-			shapeRenderer.setProjectionMatrix(camera.combined);
-			shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-			gameplaySession.renderMuzzleFlash(shapeRenderer);
-
-			for (Enemy enemy : enemies) {
-				enemy.render(shapeRenderer);
-			}
+for (Enemy enemy : enemies) {
+    enemy.render(shapeRenderer);
+}
 
 // Render the upgrade NPC during the shop break.
-			if (shopOpen
-				&& upgradeNPC != null
-				&& upgradeNPC.isActive()) {
-				upgradeNPC.render(shapeRenderer);
-			}
+if (shopOpen
+        && upgradeNPC != null
+        && upgradeNPC.isActive()) {
+    upgradeNPC.render(shapeRenderer);
+}
 
-			shapeRenderer.end();
-			renderEnemyHealthBars();
-		}
+shapeRenderer.end();
 
-		if (playerState != null) {
-			renderDoomHud(playerState);
-			renderWaveStatus(viewWidth, viewHeight);
-			renderBossHealth(playerState, viewWidth, viewHeight);
-		}
+// Render animated zombie sprites.
+batch.setProjectionMatrix(camera.combined);
+batch.begin();
 
-		if (debugHitbox
-			&& !gameOver
-			&& sceneLoader != null
-			&& sceneLoader.getWorld() != null) {
+for (Enemy enemy : enemies) {
+    if (enemy instanceof Zombie) {
+        ((Zombie) enemy).renderSprite(batch, safeDelta);
+    }
+}
 
-			box2dDebugRenderer.render(
-				sceneLoader.getWorld(),
-				camera.combined
-			);
-		}
+batch.end();
 
-		if (gameOver) {
-			renderGameOverOverlay(viewWidth, viewHeight);
-			handleGameOverInput();
-		}
-		if (gameOver) {
-			renderGameOverOverlay(viewWidth, viewHeight);
-			handleGameOverInput();
-		}
-	}
+            renderEnemyHealthBars();
+        }
+
+        if (playerState != null) {
+            renderDoomHud(playerState);
+            renderWaveStatus(viewWidth, viewHeight);
+            renderBossHealth(playerState, viewWidth, viewHeight);
+        }
+
+        if (debugHitbox
+                && !gameOver
+                && sceneLoader != null
+                && sceneLoader.getWorld() != null) {
+
+            box2dDebugRenderer.render(
+                sceneLoader.getWorld(),
+                camera.combined
+            );
+        }
+
+        if (gameOver) {
+            renderGameOverOverlay(viewWidth, viewHeight);
+            handleGameOverInput();
+        }
+    }
 
 	// --------------------------------------------------
 	// ENEMY HEALTH BARS
 	// --------------------------------------------------
+
 	private void renderEnemyHealthBars() {
 		if (enemies.isEmpty()) {
 			return;
@@ -828,8 +809,8 @@ public class Page1Screen implements Screen {
 			float barY = enemy.bounds.y + enemy.bounds.height + 5f;
 
 			float hpPercent = enemy.getMaxHealth() > 0
-				? (float) enemy.getHealth() / enemy.getMaxHealth()
-				: 0f;
+					? (float) enemy.getHealth() / enemy.getMaxHealth()
+					: 0f;
 
 			hpPercent = Math.max(0f, Math.min(1f, hpPercent));
 
@@ -846,11 +827,10 @@ public class Page1Screen implements Screen {
 				}
 
 				shapeRenderer.rect(
-					barX,
-					barY,
-					barWidth * hpPercent,
-					barHeight
-				);
+						barX,
+						barY,
+						barWidth * hpPercent,
+						barHeight);
 			}
 		}
 
@@ -864,17 +844,16 @@ public class Page1Screen implements Screen {
 				continue;
 			}
 
-			String hpText
-				= enemy.getHealth() + " / " + enemy.getMaxHealth();
+			String hpText = enemy.getHealth() + " / " + enemy.getMaxHealth();
 
 			GlyphLayout layout = new GlyphLayout(hudFont, hpText);
 
 			float textX = enemy.bounds.x
-				+ enemy.bounds.width / 2f
-				- layout.width / 2f;
+					+ enemy.bounds.width / 2f
+					- layout.width / 2f;
 
 			float textY = enemy.bounds.y
-				+ enemy.bounds.height + 14f;
+					+ enemy.bounds.height + 14f;
 
 			hudFont.setColor(Color.WHITE);
 			hudFont.draw(batch, hpText, textX, textY);
@@ -886,6 +865,7 @@ public class Page1Screen implements Screen {
 	// --------------------------------------------------
 	// PLAYER DEATH / GAME OVER
 	// --------------------------------------------------
+
 	private void handlePlayerDeath(PlayerState player) {
 		if (player == null || !player.isDead() || gameOver) {
 			return;
@@ -895,6 +875,8 @@ public class Page1Screen implements Screen {
 
 		if (deathCount >= MAX_DEATHS) {
 			gameOver = true;
+
+			StatsTracker.endRun();
 
 			Gdx.input.setCursorCatched(false);
 			Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
@@ -913,33 +895,29 @@ public class Page1Screen implements Screen {
 	}
 
 	private void renderGameOverOverlay(
-		float viewWidth,
-		float viewHeight
-	) {
+			float viewWidth,
+			float viewHeight) {
 		float centerX = camera.position.x;
 		float centerY = camera.position.y;
 		float left = centerX - viewWidth / 2f;
 		float bottom = centerY - viewHeight / 2f;
 
 		retryButtonBounds.set(
-			centerX - 48f,
-			centerY - 12f,
-			96f,
-			22f
-		);
+				centerX - 48f,
+				centerY - 12f,
+				96f,
+				22f);
 
 		menuButtonBounds.set(
-			centerX - 48f,
-			centerY - 42f,
-			96f,
-			22f
-		);
+				centerX - 48f,
+				centerY - 42f,
+				96f,
+				22f);
 
 		Gdx.gl.glEnable(GL20.GL_BLEND);
 		Gdx.gl.glBlendFunc(
-			GL20.GL_SRC_ALPHA,
-			GL20.GL_ONE_MINUS_SRC_ALPHA
-		);
+				GL20.GL_SRC_ALPHA,
+				GL20.GL_ONE_MINUS_SRC_ALPHA);
 
 		shapeRenderer.setProjectionMatrix(camera.combined);
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -949,19 +927,17 @@ public class Page1Screen implements Screen {
 
 		shapeRenderer.setColor(0.65f, 0.08f, 0.08f, 1f);
 		shapeRenderer.rect(
-			retryButtonBounds.x,
-			retryButtonBounds.y,
-			retryButtonBounds.width,
-			retryButtonBounds.height
-		);
+				retryButtonBounds.x,
+				retryButtonBounds.y,
+				retryButtonBounds.width,
+				retryButtonBounds.height);
 
 		shapeRenderer.setColor(0.12f, 0.30f, 0.62f, 1f);
 		shapeRenderer.rect(
-			menuButtonBounds.x,
-			menuButtonBounds.y,
-			menuButtonBounds.width,
-			menuButtonBounds.height
-		);
+				menuButtonBounds.x,
+				menuButtonBounds.y,
+				menuButtonBounds.width,
+				menuButtonBounds.height);
 
 		shapeRenderer.end();
 		Gdx.gl.glDisable(GL20.GL_BLEND);
@@ -973,39 +949,34 @@ public class Page1Screen implements Screen {
 		drawCenteredText("GAME OVER", centerX, centerY + 25f);
 
 		drawCenteredText(
-			"You died " + deathCount + " times",
-			centerX,
-			centerY + 10f
-		);
+				"You died " + deathCount + " times",
+				centerX,
+				centerY + 10f);
 
 		drawCenteredText(
-			"RETRY",
-			centerX,
-			retryButtonBounds.y + 14f
-		);
+				"RETRY",
+				centerX,
+				retryButtonBounds.y + 14f);
 
 		drawCenteredText(
-			"MENU",
-			centerX,
-			menuButtonBounds.y + 14f
-		);
+				"MENU",
+				centerX,
+				menuButtonBounds.y + 14f);
 
 		batch.end();
 	}
 
 	private void drawCenteredText(
-		String text,
-		float centerX,
-		float y
-	) {
+			String text,
+			float centerX,
+			float y) {
 		GlyphLayout layout = new GlyphLayout(hudFont, text);
 
 		hudFont.draw(
-			batch,
-			text,
-			centerX - layout.width / 2f,
-			y
-		);
+				batch,
+				text,
+				centerX - layout.width / 2f,
+				y);
 	}
 
 	private void handleGameOverInput() {
@@ -1024,168 +995,170 @@ public class Page1Screen implements Screen {
 			game.setScreen(new Page1Screen(game));
 		} else if (menuButtonBounds.contains(gameOverTouch)) {
 			dispose();
-			game.showMainMenu(); // Reuses cached main menu instantly without lag
+			game.setScreen(new MainMenuScreen(game));
 		}
 	}
 
 	// --------------------------------------------------
 	// DOOM-STYLE PLAYER HUD
 	// --------------------------------------------------
+
 	private void renderDoomHud(PlayerState player) {
-		if (player == null || batch == null || shapeRenderer == null) {
-			return;
-		}
+        if (player == null || batch == null || shapeRenderer == null) {
+            return;
+        }
 
-		int screenWidth = Gdx.graphics.getWidth();
-		int screenHeight = Gdx.graphics.getHeight();
+        int screenWidth = Gdx.graphics.getWidth();
+        int screenHeight = Gdx.graphics.getHeight();
 
-		hudCamera.setToOrtho(false, screenWidth, screenHeight);
-		hudCamera.update();
+        hudCamera.setToOrtho(false, screenWidth, screenHeight);
+        hudCamera.update();
 
-		float hudHeight = Math.max(105f, screenHeight * 0.19f);
-		float centerX = screenWidth / 2f;
+        float hudHeight = Math.max(105f, screenHeight * 0.19f);
+        float centerX = screenWidth / 2f;
 
-		float healthPercent = player.maxHealth > 0
-			? (float) player.health / player.maxHealth
-			: 0f;
+        float healthPercent = player.maxHealth > 0
+            ? (float) player.health / player.maxHealth
+            : 0f;
 
-		healthPercent = Math.max(0f, Math.min(1f, healthPercent));
+        healthPercent = Math.max(0f, Math.min(1f, healthPercent));
 
-		int ammo = Math.max(0, player.weaponState.currentAmmo);
-		int maxAmmo = player.weaponState.getEffectiveMaxAmmo(
-			player.weaponState.activeWeapon
-		);
+        int ammo = Math.max(0, player.weaponState.currentAmmo);
+       int maxAmmo = player.weaponState.getEffectiveMaxAmmo(
+    player.weaponState.activeWeapon
+);
 
-		String weaponName = player.weaponState.activeWeapon.displayName;
+        String weaponName = player.weaponState.activeWeapon.displayName;
+        
+       PlayerController controller = gameplaySession != null
+        ? gameplaySession.getPlayerController()
+        : null;
 
-		PlayerController controller = gameplaySession != null
-			? gameplaySession.getPlayerController()
-			: null;
+float dashCooldown = controller != null
+        ? controller.getDashCooldownRemaining()
+        : 0f;
 
-		float dashCooldown = controller != null
-			? controller.getDashCooldownRemaining()
-			: 0f;
+float pushCooldown = controller != null
+        ? controller.getPushCooldownRemaining()
+        : 0f;
 
-		float pushCooldown = controller != null
-			? controller.getPushCooldownRemaining()
-			: 0f;
+String dashText = dashCooldown <= 0f
+        ? "READY"
+        : String.format(java.util.Locale.US, "%.1fs", dashCooldown);
 
-		String dashText = dashCooldown <= 0f
-			? "READY"
-			: String.format(java.util.Locale.US, "%.1fs", dashCooldown);
+String pushText = pushCooldown <= 0f
+        ? "READY"
+        : String.format(java.util.Locale.US, "%.1fs", pushCooldown);
 
-		String pushText = pushCooldown <= 0f
-			? "READY"
-			: String.format(java.util.Locale.US, "%.1fs", pushCooldown);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(
+            GL20.GL_SRC_ALPHA,
+            GL20.GL_ONE_MINUS_SRC_ALPHA
+        );
 
-		Gdx.gl.glEnable(GL20.GL_BLEND);
-		Gdx.gl.glBlendFunc(
-			GL20.GL_SRC_ALPHA,
-			GL20.GL_ONE_MINUS_SRC_ALPHA
-		);
+        shapeRenderer.setProjectionMatrix(hudCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-		shapeRenderer.setProjectionMatrix(hudCamera.combined);
-		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(0.025f, 0.025f, 0.035f, 0.98f);
+        shapeRenderer.rect(0f, 0f, screenWidth, hudHeight);
 
-		shapeRenderer.setColor(0.025f, 0.025f, 0.035f, 0.98f);
-		shapeRenderer.rect(0f, 0f, screenWidth, hudHeight);
+        shapeRenderer.setColor(0.35f, 0.30f, 0.22f, 1f);
+        shapeRenderer.rect(0f, hudHeight - 4f, screenWidth, 4f);
 
-		shapeRenderer.setColor(0.35f, 0.30f, 0.22f, 1f);
-		shapeRenderer.rect(0f, hudHeight - 4f, screenWidth, 4f);
+        float leftPanelX = screenWidth * 0.04f;
+        float healthBarWidth = screenWidth * 0.18f;
+        float healthBarHeight = 13f;
+        float healthBarY = hudHeight * 0.55f;
 
-		float leftPanelX = screenWidth * 0.04f;
-		float healthBarWidth = screenWidth * 0.18f;
-		float healthBarHeight = 13f;
-		float healthBarY = hudHeight * 0.55f;
+        shapeRenderer.setColor(0.13f, 0.10f, 0.10f, 1f);
+        shapeRenderer.rect(
+            leftPanelX,
+            healthBarY,
+            healthBarWidth,
+            healthBarHeight
+        );
 
-		shapeRenderer.setColor(0.13f, 0.10f, 0.10f, 1f);
-		shapeRenderer.rect(
-			leftPanelX,
-			healthBarY,
-			healthBarWidth,
-			healthBarHeight
-		);
+        if (healthPercent > 0f) {
+            if (healthPercent > 0.5f) {
+                shapeRenderer.setColor(0.1f, 0.75f, 0.18f, 1f);
+            } else if (healthPercent > 0.25f) {
+                shapeRenderer.setColor(0.95f, 0.55f, 0.05f, 1f);
+            } else {
+                shapeRenderer.setColor(0.9f, 0.08f, 0.08f, 1f);
+            }
 
-		if (healthPercent > 0f) {
-			if (healthPercent > 0.5f) {
-				shapeRenderer.setColor(0.1f, 0.75f, 0.18f, 1f);
-			} else if (healthPercent > 0.25f) {
-				shapeRenderer.setColor(0.95f, 0.55f, 0.05f, 1f);
-			} else {
-				shapeRenderer.setColor(0.9f, 0.08f, 0.08f, 1f);
-			}
+            shapeRenderer.rect(
+                leftPanelX,
+                healthBarY,
+                healthBarWidth * healthPercent,
+                healthBarHeight
+            );
+        }
 
-			shapeRenderer.rect(
-				leftPanelX,
-				healthBarY,
-				healthBarWidth * healthPercent,
-				healthBarHeight
-			);
-		}
+        float portraitSize = Math.min(88f, hudHeight * 0.75f);
+        float portraitX = centerX - portraitSize / 2f;
+        float portraitY = hudHeight * 0.08f;
 
-		float portraitSize = Math.min(88f, hudHeight * 0.75f);
-		float portraitX = centerX - portraitSize / 2f;
-		float portraitY = hudHeight * 0.08f;
+        shapeRenderer.setColor(0.20f, 0.18f, 0.15f, 1f);
+        shapeRenderer.rect(
+            portraitX - 5f,
+            portraitY - 5f,
+            portraitSize + 10f,
+            portraitSize + 10f
+        );
 
-		shapeRenderer.setColor(0.20f, 0.18f, 0.15f, 1f);
-		shapeRenderer.rect(
-			portraitX - 5f,
-			portraitY - 5f,
-			portraitSize + 10f,
-			portraitSize + 10f
-		);
+        shapeRenderer.setColor(0.08f, 0.08f, 0.08f, 1f);
+        shapeRenderer.rect(
+            portraitX,
+            portraitY,
+            portraitSize,
+            portraitSize
+        );
 
-		shapeRenderer.setColor(0.08f, 0.08f, 0.08f, 1f);
-		shapeRenderer.rect(
-			portraitX,
-			portraitY,
-			portraitSize,
-			portraitSize
-		);
+        shapeRenderer.setColor(0.68f, 0.48f, 0.34f, 1f);
+        shapeRenderer.circle(
+            centerX,
+            portraitY + portraitSize * 0.57f,
+            portraitSize * 0.27f
+        );
 
-		shapeRenderer.setColor(0.68f, 0.48f, 0.34f, 1f);
-		shapeRenderer.circle(
-			centerX,
-			portraitY + portraitSize * 0.57f,
-			portraitSize * 0.27f
-		);
+        shapeRenderer.setColor(0.12f, 0.10f, 0.10f, 1f);
+        shapeRenderer.rect(
+            centerX - portraitSize * 0.25f,
+            portraitY + portraitSize * 0.29f,
+            portraitSize * 0.50f,
+            portraitSize * 0.12f
+        );
 
-		shapeRenderer.setColor(0.12f, 0.10f, 0.10f, 1f);
-		shapeRenderer.rect(
-			centerX - portraitSize * 0.25f,
-			portraitY + portraitSize * 0.29f,
-			portraitSize * 0.50f,
-			portraitSize * 0.12f
-		);
+        float rightPanelX = screenWidth * 0.76f;
+        float ammoBarWidth = screenWidth * 0.19f;
 
-		float rightPanelX = screenWidth * 0.76f;
-		float ammoBarWidth = screenWidth * 0.19f;
+        float ammoPercent = maxAmmo > 0
+            ? (float) ammo / maxAmmo
+            : 0f;
 
-		float ammoPercent = maxAmmo > 0
-			? (float) ammo / maxAmmo
-			: 0f;
+        ammoPercent = Math.max(0f, Math.min(1f, ammoPercent));
 
-		ammoPercent = Math.max(0f, Math.min(1f, ammoPercent));
+        shapeRenderer.setColor(0.13f, 0.10f, 0.10f, 1f);
+        shapeRenderer.rect(
+            rightPanelX,
+            healthBarY,
+            ammoBarWidth,
+            healthBarHeight
+        );
 
-		shapeRenderer.setColor(0.13f, 0.10f, 0.10f, 1f);
-		shapeRenderer.rect(
-			rightPanelX,
-			healthBarY,
-			ammoBarWidth,
-			healthBarHeight
-		);
+        if (ammoPercent > 0f) {
+            shapeRenderer.setColor(0.88f, 0.62f, 0.12f, 1f);
+            shapeRenderer.rect(
+                rightPanelX,
+                healthBarY,
+                ammoBarWidth * ammoPercent,
+                healthBarHeight
+            );
+        }
 
-		if (ammoPercent > 0f) {
-			shapeRenderer.setColor(0.88f, 0.62f, 0.12f, 1f);
-			shapeRenderer.rect(
-				rightPanelX,
-				healthBarY,
-				ammoBarWidth * ammoPercent,
-				healthBarHeight
-			);
-		}
-
-		// ==================================================
+        
+        // ==================================================
 // DASH AND PUSH HUD PANELS
 // ==================================================
 		float skillPanelWidth = Math.min(145f, screenWidth * 0.13f);
@@ -1403,54 +1376,50 @@ public class Page1Screen implements Screen {
 	// --------------------------------------------------
 
 	private void renderWaveStatus(
-		float viewWidth,
-		float viewHeight
-	) {
+			float viewWidth,
+			float viewHeight) {
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
 
 		hudFont.setColor(Color.WHITE);
 
 		String waveText = bossSpawned
-			? "BOSS WAVE " + currentWave
-			: "WAVE " + currentWave;
+				? "BOSS WAVE " + currentWave
+				: "WAVE " + currentWave;
 
 		GlyphLayout layout = new GlyphLayout(hudFont, waveText);
 
 		hudFont.draw(
-			batch,
-			waveText,
-			camera.position.x - layout.width / 2f,
-			camera.position.y + viewHeight / 2f - 20f
-		);
+				batch,
+				waveText,
+				camera.position.x - layout.width / 2f,
+				camera.position.y + viewHeight / 2f - 20f);
 
 		String currencyText = "CURRENCY: $" + currency;
 
 		hudFont.draw(
-			batch,
-			currencyText,
-			camera.position.x - viewWidth / 2f + 12f,
-			camera.position.y + viewHeight / 2f - 20f
-		);
+				batch,
+				currencyText,
+				camera.position.x - viewWidth / 2f + 12f,
+				camera.position.y + viewHeight / 2f - 20f);
 
 		if (shopOpen) {
 			PlayerState player = gameplaySession != null
-				? gameplaySession.getPlayerState()
-				: null;
+					? gameplaySession.getPlayerState()
+					: null;
 
 			boolean nearNPC = player != null
-				&& upgradeNPC != null
-				&& upgradeNPC.isActive()
-				&& upgradeNPC.isNear(player.x, player.y);
+					&& upgradeNPC != null
+					&& upgradeNPC.isActive()
+					&& upgradeNPC.isNear(player.x, player.y);
 
 			if (nearNPC && !upgradeMenuOpen) {
 				hudFont.setColor(Color.CYAN);
 
 				drawCenteredText(
-					"PRESS B TO UPGRADE",
-					camera.position.x,
-					camera.position.y + viewHeight / 2f - 100f
-				);
+						"PRESS B TO UPGRADE",
+						camera.position.x,
+						camera.position.y + viewHeight / 2f - 100f);
 			}
 
 			if (upgradeMenuOpen && player != null) {
@@ -1461,92 +1430,79 @@ public class Page1Screen implements Screen {
 				hudFont.setColor(Color.CYAN);
 
 				drawCenteredText(
-					"WEAPON UPGRADE: " + weapon.displayName,
-					camera.position.x,
-					camera.position.y + viewHeight / 2f - 100f
-				);
+						"WEAPON UPGRADE: " + weapon.displayName,
+						camera.position.x,
+						camera.position.y + viewHeight / 2f - 100f);
 
 				drawCenteredText(
-					"[1] DAMAGE L" + ws.getDamageLevel(weapon)
-					+ " - $" + DAMAGE_UPGRADE_BASE_COST
-					* (ws.getDamageLevel(weapon) + 1),
-					camera.position.x,
-					camera.position.y + viewHeight / 2f - 120f
-				);
+						"[1] DAMAGE L" + ws.getDamageLevel(weapon)
+								+ " - $" + DAMAGE_UPGRADE_BASE_COST
+										* (ws.getDamageLevel(weapon) + 1),
+						camera.position.x,
+						camera.position.y + viewHeight / 2f - 120f);
 
 				drawCenteredText(
-					"[2] MAGAZINE L" + ws.getMagazineLevel(weapon)
-					+ " - $" + MAGAZINE_UPGRADE_BASE_COST
-					* (ws.getMagazineLevel(weapon) + 1),
-					camera.position.x,
-					camera.position.y + viewHeight / 2f - 140f
-				);
+						"[2] MAGAZINE L" + ws.getMagazineLevel(weapon)
+								+ " - $" + MAGAZINE_UPGRADE_BASE_COST
+										* (ws.getMagazineLevel(weapon) + 1),
+						camera.position.x,
+						camera.position.y + viewHeight / 2f - 140f);
 
 				drawCenteredText(
-					"[3] FIRE RATE L" + ws.getFireRateLevel(weapon)
-					+ " - $" + FIRE_RATE_UPGRADE_BASE_COST
-					* (ws.getFireRateLevel(weapon) + 1),
-					camera.position.x,
-					camera.position.y + viewHeight / 2f - 160f
-				);
+						"[3] FIRE RATE L" + ws.getFireRateLevel(weapon)
+								+ " - $" + FIRE_RATE_UPGRADE_BASE_COST
+										* (ws.getFireRateLevel(weapon) + 1),
+						camera.position.x,
+						camera.position.y + viewHeight / 2f - 160f);
 
 				drawCenteredText(
-					"[B] CLOSE",
-					camera.position.x,
-					camera.position.y + viewHeight / 2f - 180f
-				);
+						"[B] CLOSE",
+						camera.position.x,
+						camera.position.y + viewHeight / 2f - 180f);
 
 				hudFont.setColor(Color.WHITE);
 
 				if (!upgradeMessage.isEmpty()) {
 					drawCenteredText(
-						upgradeMessage,
-						camera.position.x,
-						camera.position.y + viewHeight / 2f - 200f
-					);
+							upgradeMessage,
+							camera.position.x,
+							camera.position.y + viewHeight / 2f - 200f);
 				}
 			}
 			float secondsLeft = Math.max(0f, waveDelayTimer);
 
-			String timerText
-				= "SHOP BREAK: " + (int) Math.ceil(secondsLeft) + "s";
+			String timerText = "SHOP BREAK: " + (int) Math.ceil(secondsLeft) + "s";
 
 			GlyphLayout timerLayout = new GlyphLayout(hudFont, timerText);
 
 			hudFont.setColor(1f, 0.85f, 0.2f, 1f);
 
 			hudFont.draw(
-				batch,
-				timerText,
-				camera.position.x - timerLayout.width / 2f,
-				camera.position.y + viewHeight / 2f - 42f
-			);
+					batch,
+					timerText,
+					camera.position.x - timerLayout.width / 2f,
+					camera.position.y + viewHeight / 2f - 42f);
 
-			String shopControls
-				= "[1] Shotgun $200    [2] AK-47 $180    [3] Pistol";
+			String shopControls = "[1] Shotgun $200    [2] AK-47 $180    [3] Pistol";
 
-			GlyphLayout controlsLayout
-				= new GlyphLayout(hudFont, shopControls);
+			GlyphLayout controlsLayout = new GlyphLayout(hudFont, shopControls);
 
 			hudFont.draw(
-				batch,
-				shopControls,
-				camera.position.x - controlsLayout.width / 2f,
-				camera.position.y + viewHeight / 2f - 60f
-			);
+					batch,
+					shopControls,
+					camera.position.x - controlsLayout.width / 2f,
+					camera.position.y + viewHeight / 2f - 60f);
 
 			if (!shopMessage.isEmpty()) {
-				GlyphLayout messageLayout
-					= new GlyphLayout(hudFont, shopMessage);
+				GlyphLayout messageLayout = new GlyphLayout(hudFont, shopMessage);
 
 				hudFont.setColor(Color.WHITE);
 
 				hudFont.draw(
-					batch,
-					shopMessage,
-					camera.position.x - messageLayout.width / 2f,
-					camera.position.y + viewHeight / 2f - 78f
-				);
+						batch,
+						shopMessage,
+						camera.position.x - messageLayout.width / 2f,
+						camera.position.y + viewHeight / 2f - 78f);
 			}
 		}
 
@@ -1557,10 +1513,9 @@ public class Page1Screen implements Screen {
 	// BOSS HEALTH
 	// --------------------------------------------------
 	private void renderBossHealth(
-		PlayerState player,
-		float viewWidth,
-		float viewHeight
-	) {
+			PlayerState player,
+			float viewWidth,
+			float viewHeight) {
 		if (!bossSpawned) {
 			return;
 		}
@@ -1569,8 +1524,8 @@ public class Page1Screen implements Screen {
 
 		for (Enemy enemy : enemies) {
 			if (enemy instanceof TargetDummy
-				&& !enemy.isDestroyed()
-				&& !enemy.isBodyDisposed()) {
+					&& !enemy.isDestroyed()
+					&& !enemy.isBodyDisposed()) {
 				bosses.add(enemy);
 			}
 		}
@@ -1594,8 +1549,8 @@ public class Page1Screen implements Screen {
 			float barY = firstBarY - i * 24f;
 
 			float healthPercent = boss.getMaxHealth() > 0
-				? (float) boss.getHealth() / boss.getMaxHealth()
-				: 0f;
+					? (float) boss.getHealth() / boss.getMaxHealth()
+					: 0f;
 
 			healthPercent = Math.max(0f, Math.min(1f, healthPercent));
 
@@ -1604,11 +1559,10 @@ public class Page1Screen implements Screen {
 
 			shapeRenderer.setColor(0.85f, 0.05f, 0.05f, 1f);
 			shapeRenderer.rect(
-				barX,
-				barY,
-				barWidth * healthPercent,
-				barHeight
-			);
+					barX,
+					barY,
+					barWidth * healthPercent,
+					barHeight);
 		}
 
 		shapeRenderer.end();
@@ -1622,19 +1576,18 @@ public class Page1Screen implements Screen {
 			float barY = firstBarY - i * 24f;
 
 			String bossText = "BOSS " + (i + 1)
-				+ ": " + boss.getHealth()
-				+ " / " + boss.getMaxHealth();
+					+ ": " + boss.getHealth()
+					+ " / " + boss.getMaxHealth();
 
 			GlyphLayout layout = new GlyphLayout(hudFont, bossText);
 
 			hudFont.setColor(Color.WHITE);
 
 			hudFont.draw(
-				batch,
-				bossText,
-				camera.position.x - layout.width / 2f,
-				barY + barHeight + 10f
-			);
+					batch,
+					bossText,
+					camera.position.x - layout.width / 2f,
+					barY + barHeight + 10f);
 		}
 
 		batch.end();
