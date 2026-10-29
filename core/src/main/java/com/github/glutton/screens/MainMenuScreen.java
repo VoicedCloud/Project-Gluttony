@@ -235,8 +235,8 @@ public class MainMenuScreen implements Screen {
                 settingsTint.color.set(isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f, isHovered ? 1.0f : 0.58f);
             }
             if (isHovered && clicked) {
-                // TODO: Hook up settings screen when ready
-            }
+    game.showDifficultySettings();
+}
         }
 
         if (exitTransform != null && exitDimensions != null) {

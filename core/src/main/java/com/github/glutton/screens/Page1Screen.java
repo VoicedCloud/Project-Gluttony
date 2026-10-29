@@ -31,10 +31,13 @@ import com.github.glutton.weapons.WeaponProfile;
 import com.github.glutton.world.GameplaySession;
 import com.github.glutton.world.PhysicsConfig;
 import com.github.glutton.weapons.WeaponState;
+import com.github.glutton.screens.DifficultySettingsScreen;
+
 
 import games.rednblack.editor.renderer.SceneConfiguration;
 import games.rednblack.editor.renderer.SceneLoader;
 import com.github.glutton.player.PlayerController;
+
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -183,45 +186,102 @@ public class Page1Screen implements Screen {
         startNextWave();
     }
 
-    private void startNextWave() {
-        currentWave++;
+   private void startNextWave() {
+    currentWave++;
 
-        waitingForNextWave = false;
-        shopOpen = false;
-        upgradeMenuOpen = false;
-        waveDelayTimer = 0f;
-        shopMessage = "";
+    waitingForNextWave = false;
+    shopOpen = false;
+    upgradeMenuOpen = false;
+    waveDelayTimer = 0f;
+    shopMessage = "";
 
-        if (upgradeNPC != null) {
-            upgradeNPC.remove();
-            upgradeNPC = null;
-        }
-
-        if (currentWave % 5 == 0) {
-            spawnBosses(currentWave / 5);
-            return;
-        }
-
-        switch (currentWave) {
-            case 1:
-            case 2:
-                spawnMixedWave(10, 6, 3, 1);
-                break;
-            case 3:
-                spawnMixedWave(10, 5, 3, 2);
-                break;
-            case 4:
-                spawnMixedWave(15, 8, 4, 3);
-                break;
-            default:
-                int total = 10 + currentWave * 3;
-                int zombies = Math.round(total * 0.60f);
-                int ghouls = Math.round(total * 0.25f);
-                int hounds = total - zombies - ghouls;
-                spawnMixedWave(total, zombies, ghouls, hounds);
-                break;
-        }
+    if (upgradeNPC != null) {
+        upgradeNPC.remove();
+        upgradeNPC = null;
     }
+
+    // Boss fight every 5 waves.
+    // Boss count and boss difficulty remain unchanged.
+    if (currentWave % 5 == 0) {
+        spawnBosses(currentWave / 5);
+        return;
+    }
+
+    int total;
+    int zombies;
+    int ghouls;
+    int hounds;
+
+    switch (currentWave) {
+        case 1:
+        case 2:
+            total = 10;
+            zombies = 6;
+            ghouls = 3;
+            hounds = 1;
+            break;
+
+        case 3:
+            total = 10;
+            zombies = 5;
+            ghouls = 3;
+            hounds = 2;
+            break;
+
+        case 4:
+            total = 15;
+            zombies = 8;
+            ghouls = 4;
+            hounds = 3;
+            break;
+
+        default:
+            total = 10 + currentWave * 3;
+            zombies = Math.round(total * 0.60f);
+            ghouls = Math.round(total * 0.25f);
+            hounds = total - zombies - ghouls;
+            break;
+    }
+
+    // Apply the selected difficulty.
+    float multiplier = game.getDifficulty().getMobMultiplier();
+
+    int adjustedTotal = Math.max(
+        1,
+        Math.round(total * multiplier)
+    );
+
+    // Preserve approximately the original monster proportions.
+    zombies = Math.round(
+        adjustedTotal * (zombies / (float) total)
+    );
+
+    ghouls = Math.round(
+        adjustedTotal * (ghouls / (float) total)
+    );
+
+    hounds = adjustedTotal - zombies - ghouls;
+
+    // Prevent negative monster counts caused by rounding.
+    if (hounds < 0) {
+        ghouls = Math.max(0, ghouls + hounds);
+        hounds = 0;
+    }
+
+    Gdx.app.log(
+        "Difficulty",
+        game.getDifficulty().name()
+            + " | Wave " + currentWave
+            + " | Monsters: " + adjustedTotal
+    );
+
+    spawnMixedWave(
+        adjustedTotal,
+        zombies,
+        ghouls,
+        hounds
+    );
+}
 
     private Enemy createEnemy(String enemyType, float x, float y) {
         switch (enemyType.toLowerCase()) {
@@ -497,209 +557,257 @@ public class Page1Screen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
-        game.revealWindowOnce();
+public void render(float delta) {
+    game.revealWindowOnce();
 
-        if (camera == null || viewport == null || batch == null) {
-            return;
-        }
+    if (camera == null || viewport == null || batch == null) {
+        return;
+    }
 
-        float safeDelta = Math.min(Math.max(delta, 0f), 0.1f);
+    float safeDelta = Math.min(Math.max(delta, 0f), 0.1f);
 
-        Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    Gdx.gl.glClearColor(0.05f, 0.05f, 0.05f, 1f);
+    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        if (!gameOver && Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
-            debugHitbox = !debugHitbox;
-        }
+    if (!gameOver && Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
+        debugHitbox = !debugHitbox;
+    }
 
-        PlayerState playerState = null;
+    PlayerState playerState = null;
 
-        if (gameplaySession != null) {
+    if (gameplaySession != null) {
+        playerState = gameplaySession.getPlayerState();
+
+        if (!gameOver) {
+            gameplaySession.update(safeDelta, enemies);
             playerState = gameplaySession.getPlayerState();
-
-            if (!gameOver) {
-                gameplaySession.update(safeDelta, enemies);
-                playerState = gameplaySession.getPlayerState();
-            }
         }
+    }
 
-        if (!gameOver
+    // Remove defeated enemies and award rewards.
+    if (!gameOver
             && sceneLoader != null
             && sceneLoader.getWorld() != null
             && !sceneLoader.getWorld().isLocked()) {
 
-            Iterator<Enemy> iterator = enemies.iterator();
+        Iterator<Enemy> iterator = enemies.iterator();
 
-            while (iterator.hasNext()) {
-                Enemy enemy = iterator.next();
+        while (iterator.hasNext()) {
+            Enemy enemy = iterator.next();
 
-                if (enemy.isDestroyed()
+            if (enemy.isDestroyed()
                     && (!(enemy instanceof Zombie)
                     || ((Zombie) enemy).isDeathAnimationFinished())) {
 
-                    int reward = getEnemyReward(enemy);
-                    currency += reward;
-                    totalKills++;
+                int reward = getEnemyReward(enemy);
+                currency += reward;
+                totalKills++;
 
-                    StatsTracker.monsterKilled();
-                    StatsTracker.earnCash(reward);
+                StatsTracker.monsterKilled();
+                StatsTracker.earnCash(reward);
 
-                    Gdx.app.log(
-                        "Rewards",
-                        "Enemy defeated! +" + reward
-                            + " currency. Total: " + currency
-                    );
+                Gdx.app.log(
+                    "Rewards",
+                    "Enemy defeated! +" + reward
+                        + " currency. Total: " + currency
+                );
 
-                    enemy.disposeBody();
-                    iterator.remove();
-                }
+                enemy.disposeBody();
+                iterator.remove();
             }
         }
+    }
 
-        if (!gameOver) {
-            updateWaveProgress(safeDelta);
-        }
+    // Update wave progress.
+    if (!gameOver) {
+        updateWaveProgress(safeDelta);
+    }
 
-        if (!gameOver
+    // Step the Box2D physics world.
+    if (!gameOver
             && sceneLoader != null
             && sceneLoader.getWorld() != null) {
 
-            float subDelta = safeDelta / PhysicsConfig.PHYSICS_SUBSTEPS;
+        float subDelta = safeDelta / PhysicsConfig.PHYSICS_SUBSTEPS;
 
-            for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
-                sceneLoader.getWorld().step(
-                    subDelta,
-                    PhysicsConfig.VELOCITY_ITERATIONS,
-                    PhysicsConfig.POSITION_ITERATIONS
-                );
-            }
-        }
-
-        if (playerState != null && !gameOver) {
-            float playerX = playerState.x;
-            float playerY = playerState.y;
-
-            for (Enemy enemy : enemies) {
-                enemy.updateAI(safeDelta, playerState);
-
-                if (!enemy.isDestroyed() && enemy.canAttack(playerX, playerY)) {
-                    if (enemy instanceof Zombie) {
-                        ((Zombie) enemy).triggerAttackAnimation();
-                    }
-
-                    int damage = enemy.getAttackDamage();
-                    playerState.takeDamage(damage);
-                }
-            }
-
-            handlePlayerDeath(playerState);
-
-            camera.position.set(
-                playerState.x,
-                playerState.y + 32f,
-                0f
+        for (int i = 0; i < PhysicsConfig.PHYSICS_SUBSTEPS; i++) {
+            sceneLoader.getWorld().step(
+                subDelta,
+                PhysicsConfig.VELOCITY_ITERATIONS,
+                PhysicsConfig.POSITION_ITERATIONS
             );
         }
+    }
 
-        camera.update();
-        viewport.apply();
+    // Update enemy AI and player damage.
+    if (playerState != null && !gameOver) {
+        float playerX = playerState.x;
+        float playerY = playerState.y;
 
-        float viewWidth = camera.viewportWidth * camera.zoom;
-        float viewHeight = camera.viewportHeight * camera.zoom;
+        for (Enemy enemy : enemies) {
+            enemy.updateAI(safeDelta, playerState);
 
-        float cameraLeftEdge = camera.position.x - viewWidth / 2f;
-        float cameraBottomEdge = camera.position.y - viewHeight / 2f;
+            if (!enemy.isDestroyed()
+                    && !enemy.isBodyDisposed()
+                    && enemy.canAttack(playerX, playerY)) {
+
+                if (enemy instanceof Zombie) {
+                    ((Zombie) enemy).triggerAttackAnimation();
+
+                } else if (enemy instanceof Ghoul) {
+                    ((Ghoul) enemy).triggerAttackAnimation();
+
+                } else if (enemy instanceof TargetDummy) {
+                    ((TargetDummy) enemy).playAttackAnimation();
+                }
+
+                int damage = enemy.getAttackDamage();
+                playerState.takeDamage(damage);
+            }
+        }
+
+        handlePlayerDeath(playerState);
+
+        camera.position.set(
+            playerState.x,
+            playerState.y + 32f,
+            0f
+        );
+    }
+
+    camera.update();
+    viewport.apply();
+
+    float viewWidth = camera.viewportWidth * camera.zoom;
+    float viewHeight = camera.viewportHeight * camera.zoom;
+
+    float cameraLeftEdge = camera.position.x - viewWidth / 2f;
+    float cameraBottomEdge = camera.position.y - viewHeight / 2f;
+
+    // Render background.
+    batch.setProjectionMatrix(camera.combined);
+    batch.begin();
+
+    if (background != null) {
+        background.draw(
+            batch,
+            camera.position.x,
+            camera.position.y,
+            cameraLeftEdge,
+            cameraBottomEdge,
+            viewWidth,
+            viewHeight
+        );
+    }
+
+    batch.end();
+
+    // Process scene engine.
+    if (!gameOver
+            && sceneLoader != null
+            && sceneLoader.getEngine() != null) {
+
+        sceneLoader.getEngine().setDelta(safeDelta);
+        sceneLoader.getEngine().process();
+    }
+
+    if (gameplaySession != null) {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        if (background != null) {
-            background.draw(
-                batch,
-                camera.position.x,
-                camera.position.y,
-                cameraLeftEdge,
-                cameraBottomEdge,
-                viewWidth,
-                viewHeight
-            );
+        gameplaySession.render(batch, shapeRenderer);
+
+        batch.end();
+
+        gameplaySession.renderTrails(
+            shapeRenderer,
+            camera.combined
+        );
+
+        // Render enemy shapes and other non-sprite objects.
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        gameplaySession.renderMuzzleFlash(shapeRenderer);
+
+        for (Enemy enemy : enemies) {
+            // Sprite-based enemies render separately below.
+            if (!(enemy instanceof Zombie)
+                    && !(enemy instanceof Hound)
+                    && !(enemy instanceof Ghoul)
+                    && !(enemy instanceof TargetDummy)) {
+
+                enemy.render(shapeRenderer);
+            }
+        }
+
+        shapeRenderer.end();
+
+        // Render the upgrade NPC.
+        if (shopOpen
+                && upgradeNPC != null
+                && upgradeNPC.isActive()) {
+
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            upgradeNPC.render(batch, safeDelta);
+            batch.end();
+        }
+
+        // Render animated enemy sprites.
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        for (Enemy enemy : enemies) {
+            if (enemy.isDestroyed() || enemy.isBodyDisposed()) {
+                continue;
+            }
+
+            if (enemy instanceof Zombie) {
+                ((Zombie) enemy).renderSprite(batch, safeDelta);
+
+            } else if (enemy instanceof Hound) {
+                ((Hound) enemy).renderSprite(batch, safeDelta);
+
+            } else if (enemy instanceof Ghoul) {
+                ((Ghoul) enemy).renderSprite(batch, safeDelta);
+
+            } else if (enemy instanceof TargetDummy) {
+                ((TargetDummy) enemy).renderSprite(batch, safeDelta);
+            }
         }
 
         batch.end();
 
-        if (!gameOver
-            && sceneLoader != null
-            && sceneLoader.getEngine() != null) {
+        renderEnemyHealthBars();
+    }
 
-            sceneLoader.getEngine().setDelta(safeDelta);
-            sceneLoader.getEngine().process();
-        }
+    // Render HUD.
+    if (playerState != null) {
+        renderDoomHud(playerState);
+        renderWaveStatus(viewWidth, viewHeight);
+        renderBossHealth(playerState, viewWidth, viewHeight);
+    }
 
-        if (gameplaySession != null) {
-            batch.setProjectionMatrix(camera.combined);
-            batch.begin();
-            gameplaySession.render(batch, shapeRenderer);
-            batch.end();
-
-            gameplaySession.renderTrails(
-                shapeRenderer,
-                camera.combined
-            );
-
-            shapeRenderer.setProjectionMatrix(camera.combined);
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-            gameplaySession.renderMuzzleFlash(shapeRenderer);
-
-            for (Enemy enemy : enemies) {
-                enemy.render(shapeRenderer);
-            }
-
-            if (shopOpen
-                && upgradeNPC != null
-                && upgradeNPC.isActive()) {
-                upgradeNPC.render(shapeRenderer);
-            }
-
-            shapeRenderer.end();
-
-            batch.setProjectionMatrix(camera.combined);
-            batch.begin();
-
-            for (Enemy enemy : enemies) {
-                if (enemy instanceof Zombie) {
-                    ((Zombie) enemy).renderSprite(batch, safeDelta);
-                }
-            }
-
-            batch.end();
-
-            renderEnemyHealthBars();
-        }
-
-        if (playerState != null) {
-            renderDoomHud(playerState);
-            renderWaveStatus(viewWidth, viewHeight);
-            renderBossHealth(playerState, viewWidth, viewHeight);
-        }
-
-        if (debugHitbox
+    // Optional Box2D hitbox debugging.
+    if (debugHitbox
             && !gameOver
             && sceneLoader != null
             && sceneLoader.getWorld() != null) {
 
-            box2dDebugRenderer.render(
-                sceneLoader.getWorld(),
-                camera.combined
-            );
-        }
-
-        if (gameOver) {
-            renderGameOverOverlay(viewWidth, viewHeight);
-            handleGameOverInput();
-        }
+        box2dDebugRenderer.render(
+            sceneLoader.getWorld(),
+            camera.combined
+        );
     }
+
+    // Game-over overlay.
+    if (gameOver) {
+        renderGameOverOverlay(viewWidth, viewHeight);
+        handleGameOverInput();
+    }
+}
 
     private void renderEnemyHealthBars() {
         if (enemies.isEmpty()) {

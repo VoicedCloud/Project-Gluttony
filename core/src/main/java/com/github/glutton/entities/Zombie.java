@@ -19,6 +19,16 @@ public class Zombie extends Enemy {
     private static final float HURT_FRAME_TIME = 0.10f;
     private static final float DEAD_FRAME_TIME = 0.14f;
 
+    // Keep the existing zombie sprite size unchanged.
+    // These dimensions are used for rendering the sprite.
+    private static final float SPRITE_WIDTH = 32f;
+    private static final float SPRITE_HEIGHT = 48f;
+
+    // Smaller collision hitbox.
+    // Change these to match the player's actual hitbox dimensions.
+    private static final float HITBOX_WIDTH = 16f;
+    private static final float HITBOX_HEIGHT = 24f;
+
     private static final String[] ZOMBIE_FOLDERS = {
         "sprites/enemies/Zombie_1/",
         "sprites/enemies/Zombie_2/",
@@ -65,9 +75,15 @@ public class Zombie extends Enemy {
     ) {
         super(
             world,
-            x, y,
-            width, height,
-            100, 2, 250f, 40f, 1f
+            x,
+            y,
+            width,
+            height,
+            100,
+            2,
+            250f,
+            40f,
+            1f
         );
 
         moveSpeed = 50f;
@@ -94,16 +110,19 @@ public class Zombie extends Enemy {
 
     private Texture loadTexture(String path) {
         Texture texture = new Texture(Gdx.files.internal(path));
+
         texture.setFilter(
             Texture.TextureFilter.Nearest,
             Texture.TextureFilter.Nearest
         );
+
         return texture;
     }
 
     private TextureRegion[][] split(Texture texture) {
         if (texture.getHeight() != FRAME_SIZE
                 || texture.getWidth() % FRAME_SIZE != 0) {
+
             throw new IllegalArgumentException(
                 "Invalid zombie sprite sheet: "
                     + texture.getWidth() + "x"
@@ -143,21 +162,25 @@ public class Zombie extends Enemy {
 
         if (animationState == AnimationState.HURT
                 && stateTimer > 0f) {
+
             stateTimer -= delta;
 
             if (stateTimer <= 0f) {
                 chooseMovementAnimation(velocity);
             }
+
             return;
         }
 
         if (animationState == AnimationState.ATTACK
                 && stateTimer > 0f) {
+
             stateTimer -= delta;
 
             if (stateTimer <= 0f) {
                 chooseMovementAnimation(velocity);
             }
+
             return;
         }
 
@@ -260,10 +283,13 @@ public class Zombie extends Enemy {
 
         TextureRegion region = frames[0][frame];
 
-        float drawWidth = bounds.width;
-        float drawHeight = bounds.height;
+        // Keep the visible sprite at its original size.
+        // Only the Box2D hitbox is smaller.
+        float drawWidth = SPRITE_WIDTH;
+        float drawHeight = SPRITE_HEIGHT;
 
-        float drawX = bounds.x;
+        // Center the sprite horizontally over the enemy bounds.
+        float drawX = bounds.x + (bounds.width - drawWidth) / 2f;
         float drawY = bounds.y;
 
         batch.draw(
@@ -281,7 +307,7 @@ public class Zombie extends Enemy {
 
     @Override
     public void render(ShapeRenderer shapeRenderer) {
-        // The zombie is rendered with its sprite sheet instead.
+        // Zombie is rendered using its sprite sheet.
     }
 
     public void disposeTextures() {
