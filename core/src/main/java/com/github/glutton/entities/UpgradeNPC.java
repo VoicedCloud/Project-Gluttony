@@ -1,12 +1,25 @@
 package com.github.glutton.entities;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 
 public class UpgradeNPC {
 
+    private static final int FRAME_COUNT = 7;
+    private static final float FRAME_DURATION = 0.15f;
+
+    private static final float SPRITE_WIDTH = 64f;
+    private static final float SPRITE_HEIGHT = 64f;
+
     private final Rectangle bounds = new Rectangle();
+
+    private final Texture idleTexture;
+    private final TextureRegion[] idleFrames;
+
+    private float animationTimer = 0f;
 
     private boolean active = true;
 
@@ -16,37 +29,63 @@ public class UpgradeNPC {
             float playerWidth,
             float playerHeight
     ) {
-        // NPC uses the same dimensions as the player.
+        // Keep the NPC's existing position and collision dimensions.
         bounds.set(
             x - playerWidth / 2f,
             y - playerHeight / 2f,
             playerWidth,
             playerHeight
         );
+
+        // Load the existing idle sprite sheet.
+        idleTexture = new Texture(
+    Gdx.files.internal("sprites/enemies/Idle.png")
+);
+
+        idleTexture.setFilter(
+            Texture.TextureFilter.Nearest,
+            Texture.TextureFilter.Nearest
+        );
+
+        // Split the sprite sheet into 7 frames.
+        idleFrames = new TextureRegion[FRAME_COUNT];
+
+        int frameWidth = idleTexture.getWidth() / FRAME_COUNT;
+        int frameHeight = idleTexture.getHeight();
+
+        for (int i = 0; i < FRAME_COUNT; i++) {
+            idleFrames[i] = new TextureRegion(
+                idleTexture,
+                i * frameWidth,
+                0,
+                frameWidth,
+                frameHeight
+            );
+        }
     }
 
-    public void render(ShapeRenderer renderer) {
+    public void render(SpriteBatch batch, float delta) {
         if (!active) {
             return;
         }
 
-        renderer.setColor(Color.CYAN);
+        // Advance the idle animation.
+        animationTimer += Math.min(delta, 0.1f);
 
-        renderer.rect(
-            bounds.x,
-            bounds.y,
-            bounds.width,
-            bounds.height
-        );
+        int frameIndex = (int) (animationTimer / FRAME_DURATION)
+                % FRAME_COUNT;
 
-        // Simple visual marker above the NPC.
-        renderer.setColor(Color.WHITE);
+        TextureRegion currentFrame = idleFrames[frameIndex];
 
-        renderer.rect(
-            bounds.x + bounds.width * 0.25f,
-            bounds.y + bounds.height,
-            bounds.width * 0.5f,
-            3f
+        // Draw the animated NPC at its existing position.
+        float drawX = bounds.x + (bounds.width - SPRITE_WIDTH) / 2f;
+float drawY = bounds.y + bounds.height / 2f - 8f;
+        batch.draw(
+            currentFrame,
+            drawX,
+            drawY,
+            SPRITE_WIDTH,
+            SPRITE_HEIGHT
         );
     }
 
@@ -78,5 +117,9 @@ public class UpgradeNPC {
 
     public float getY() {
         return bounds.y + bounds.height / 2f;
+    }
+
+    public void dispose() {
+        idleTexture.dispose();
     }
 }

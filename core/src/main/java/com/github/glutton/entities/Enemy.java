@@ -12,7 +12,6 @@ import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 
 import com.github.glutton.player.PlayerState;
-import com.github.glutton.world.PhysicsConfig;
 
 public abstract class Enemy {
 
@@ -31,7 +30,6 @@ public abstract class Enemy {
     protected float attackCooldown;
 
     // Individual enemy movement settings.
-    // Ghoul, Hound, and Zombie can override these in their constructors.
     protected float moveSpeed = 80f;
     protected float jumpVelocity = 200f;
 
@@ -64,6 +62,8 @@ public abstract class Enemy {
         }
 
         this.world = world;
+
+        // Keep the original dimensions for sprite positioning.
         this.bounds = new Rectangle(x, y, width, height);
 
         this.health = health;
@@ -78,40 +78,70 @@ public abstract class Enemy {
 
         // Create the main physics body.
         BodyDef bodyDef = new BodyDef();
+
         bodyDef.type = BodyDef.BodyType.DynamicBody;
+
         bodyDef.position.set(
             x + width / 2f,
             y + height / 2f
         );
+
         bodyDef.fixedRotation = true;
         bodyDef.allowSleep = false;
 
         body = world.createBody(bodyDef);
         body.setUserData(this);
 
-        // Main collision fixture.
+        // ==========================================
+        // MAIN COLLISION HITBOX
+        // ==========================================
+
+        // Make the hitbox smaller than the sprite.
+        float hitboxWidth = width * 0.5f;
+        float hitboxHeight = height * 0.5f;
+
+        // Keep the hitbox toward the bottom of the sprite.
+        float hitboxOffsetY =
+            -height / 2f + hitboxHeight / 2f;
+
         PolygonShape mainShape = new PolygonShape();
-        mainShape.setAsBox(width / 2f, height / 2f);
+
+        mainShape.setAsBox(
+            hitboxWidth / 2f,
+            hitboxHeight / 2f,
+            new Vector2(0f, hitboxOffsetY),
+            0f
+        );
 
         FixtureDef mainFixtureDef = new FixtureDef();
+
         mainFixtureDef.shape = mainShape;
         mainFixtureDef.density = 1f;
         mainFixtureDef.friction = 0.2f;
         mainFixtureDef.restitution = 0f;
 
         body.createFixture(mainFixtureDef);
+
         mainShape.dispose();
 
-        // Foot sensor for ground detection.
+        // ==========================================
+        // FOOT SENSOR FOR GROUND DETECTION
+        // ==========================================
+
         PolygonShape footShape = new PolygonShape();
+
         footShape.setAsBox(
-            width * 0.35f,
+            hitboxWidth * 0.35f,
             1f,
-            new Vector2(0f, -height / 2f + 0.5f),
+            new Vector2(
+                0f,
+                -height / 2f + 0.5f
+            ),
             0f
         );
 
         FixtureDef footFixtureDef = new FixtureDef();
+
         footFixtureDef.shape = footShape;
         footFixtureDef.isSensor = true;
 
@@ -123,13 +153,14 @@ public abstract class Enemy {
         syncBounds();
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // GROUND CONTACT
-    // --------------------------------------------------
+    // ==========================================
 
     public void handleGroundContactBegin(Contact contact) {
         if (isFootSensorContact(contact)
                 && isSolidGround(contact)) {
+
             groundContacts++;
         }
     }
@@ -137,7 +168,11 @@ public abstract class Enemy {
     public void handleGroundContactEnd(Contact contact) {
         if (isFootSensorContact(contact)
                 && isSolidGround(contact)) {
-            groundContacts = Math.max(0, groundContacts - 1);
+
+            groundContacts = Math.max(
+                0,
+                groundContacts - 1
+            );
         }
     }
 
@@ -158,21 +193,30 @@ public abstract class Enemy {
 
         Object userData = other.getBody().getUserData();
 
-        return !("player".equals(userData)
-            || userData instanceof Enemy);
+        return !(
+            "player".equals(userData)
+                || userData instanceof Enemy
+        );
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // ENEMY AI
-    // --------------------------------------------------
+    // ==========================================
 
     public void updateAI(float delta, PlayerState player) {
         if (isDestroyed() || player == null || bodyDisposed) {
             return;
         }
 
-        attackTimer = Math.max(0f, attackTimer - delta);
-        jumpCooldown = Math.max(0f, jumpCooldown - delta);
+        attackTimer = Math.max(
+            0f,
+            attackTimer - delta
+        );
+
+        jumpCooldown = Math.max(
+            0f,
+            jumpCooldown - delta
+        );
 
         syncBounds();
 
@@ -195,7 +239,7 @@ public abstract class Enemy {
             return;
         }
 
-        // Follow the player using this enemy's own movement speed.
+        // Follow the player.
         float horizontalDistance = Math.abs(dx);
 
         if (horizontalDistance > attackRange) {
@@ -204,7 +248,10 @@ public abstract class Enemy {
                 velocity.y
             );
         } else {
-            body.setLinearVelocity(0f, velocity.y);
+            body.setLinearVelocity(
+                0f,
+                velocity.y
+            );
         }
 
         // Jump if the player is above the enemy.
@@ -214,7 +261,8 @@ public abstract class Enemy {
             player.y > bounds.y + bounds.height + 5f;
 
         boolean playerJumping =
-            player.movementState == PlayerState.MovementState.JUMP;
+            player.movementState
+                == PlayerState.MovementState.JUMP;
 
         if (grounded
                 && jumpCooldown <= 0f
@@ -233,9 +281,9 @@ public abstract class Enemy {
         syncBounds();
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // POSITION SYNCHRONIZATION
-    // --------------------------------------------------
+    // ==========================================
 
     public void syncBounds() {
         if (bodyDisposed) {
@@ -244,22 +292,26 @@ public abstract class Enemy {
 
         Vector2 position = body.getPosition();
 
+        // Preserve the original sprite dimensions.
         bounds.setPosition(
             position.x - bounds.width / 2f,
             position.y - bounds.height / 2f
         );
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // HEALTH
-    // --------------------------------------------------
+    // ==========================================
 
     public void takeDamage(int amount) {
         if (amount <= 0 || isDestroyed()) {
             return;
         }
 
-        health = Math.max(0, health - amount);
+        health = Math.max(
+            0,
+            health - amount
+        );
     }
 
     public boolean isDestroyed() {
@@ -291,9 +343,9 @@ public abstract class Enemy {
         return bodyDisposed;
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // ATTACKING
-    // --------------------------------------------------
+    // ==========================================
 
     public boolean canAttack(float playerX, float playerY) {
         if (!aggro || isDestroyed() || attackTimer > 0f) {
@@ -313,9 +365,9 @@ public abstract class Enemy {
         return false;
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // DISPOSAL
-    // --------------------------------------------------
+    // ==========================================
 
     public void disposeBody() {
         if (bodyDisposed) {
@@ -331,9 +383,9 @@ public abstract class Enemy {
         world.destroyBody(body);
     }
 
-    // --------------------------------------------------
+    // ==========================================
     // RESET
-    // --------------------------------------------------
+    // ==========================================
 
     public void resetForRespawn() {
         if (bodyDisposed) {
@@ -357,7 +409,7 @@ public abstract class Enemy {
         body.setAngularVelocity(0f);
 
         syncBounds();
-    }
+        }
 
     // Each enemy subclass implements its own rendering.
     public abstract void render(ShapeRenderer shapeRenderer);
