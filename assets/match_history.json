@@ -61,4 +61,51 @@
 	cashEarned: 236
 	timestamp: 2026-10-30 07:25
 }
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 3
+	monstersKilled: 48
+	cashEarned: 498
+	timestamp: 2026-10-30 11:36
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	monstersKilled: 2
+	cashEarned: 20
+	timestamp: 2026-10-30 12:18
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 5
+	monstersKilled: 48
+	cashEarned: 594
+	timestamp: 2026-10-30 12:28
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 6
+	monstersKilled: 74
+	cashEarned: 863
+	timestamp: 2026-10-30 12:36
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 10
+	monstersKilled: 216
+	cashEarned: 2526
+	timestamp: 2026-10-30 12:48
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	wavesSurvived: 4
+	monstersKilled: 68
+	cashEarned: 707
+	timestamp: 2026-10-30 14:08
+}
+{
+	class: com.github.glutton.screens.MatchRecord
+	monstersKilled: 1
+	cashEarned: 10
+	timestamp: 2026-10-30 14:08
+}
 ]
