@@ -10,6 +10,8 @@ The online login is currently unavailable since it's run on server hosted by my 
 
 Oh, by the way. You gonna need to use Java 17 for it to run. I personally used Adoptium 17, but any JDK works if I recall.
 
+And the codes and files in the releases isn't the game. My friend/teammate didn't know how to push or upload new changes into our Github Repository so he jst uploaded them into releases instead.
+
 Last of all, this project has been discontinued. I'm now trying to work on a 3D game on Unity using C#. I thought I should let people know.
 
 ## Platforms
