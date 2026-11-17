@@ -1,4 +1,4 @@
-# Glutton
+# Glutton (Discontinued)
 
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 
@@ -8,11 +8,15 @@ This project was generated with a template including simple application launcher
 
 The online login is currently unavailable since it's run on server hosted by my PC, now offline. Due to financial reasons, my PC cannot be ran at all times. Thank you.
 
+Oh, by the way. You gonna need to use Java 17 for it to run. I personally used Adoptium 17, but any JDK works if I recall.
+
+Last of all, this project has been discontinued. I'm now trying to work on a 3D game on Unity using C#. I thought I should let people know.
+
 ## Platforms
 
 - `core`: Main module with the application logic shared by all platforms.
 - `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
-- `android`: Android mobile platform. Needs Android SDK.
+- `android`: Android mobile platform. Needs Android SDK. (Currently does not support this project is unfinished after all.)
 
 ## Gradle
 
